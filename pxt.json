@@ -1,0 +1,29 @@
+{
+    "name": "DFRobot_loRaWANNodeModule",
+    "version": "0.0.0",
+    "description": "Gravity: LoRaWAN Node Module",
+    "license": "MIT",
+    "dependencies": {
+        "core": "*",
+        "radio": "*",
+        "microphone": "*"
+    },
+    "files": [
+        "README.md",
+        "main.blocks",
+        "main.ts",
+        "loRaWANNodeModule.ts",
+        "_locales/en/DFRobot_loRaWANNodeModule-jsdoc-strings.json",
+        "_locales/en/DFRobot_loRaWANNodeModule-strings.json",
+        "_locales/zh/DFRobot_loRaWANNodeModule-jsdoc-strings.json",
+        "_locales/zh/DFRobot_loRaWANNodeModule-strings.json"
+    ],
+    "testFiles": [
+        "test.ts"
+    ],
+    "public": true,
+    "supportedTargets": [
+        "microbit"
+    ],
+    "preferredEditor": "blocksprj"
+}
