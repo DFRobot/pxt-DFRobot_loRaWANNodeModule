@@ -346,7 +346,7 @@ enum LoRaCommand {
     REBOOT = "AT+REBOOT"
 }
 
-//% color=#FFD43B icon=\uf09e weight=40
+//% color="#FFD43B" icon="\uf09e"
 //% groups=['CONNECT_NODE', 'CONNECT_GATEWAY']
 namespace LoRaWAN {
     /**
@@ -354,6 +354,7 @@ namespace LoRaWAN {
      */
     //% blockId=lorawan_initialize
     //% block="Node initialize"
+    //% weight=180
     //% group="CONNECT_NODE"
     export function initialize(): void {}
 
@@ -367,6 +368,7 @@ namespace LoRaWAN {
     //% band.defl=LoRaBand.EU868
     //% address.min=1 address.max=255 address.defl=1
     //% inlineInputMode=external
+    //% weight=170
     //% group="CONNECT_NODE"
     export function configNode(band: LoRaBand, address: number): void {}
 
@@ -375,6 +377,7 @@ namespace LoRaWAN {
      */
     //% blockId=lorawan_connect_node
     //% block="Establish node connection"
+    //% weight=165
     //% group="CONNECT_NODE"
     export function connectNode(): void {}
 
@@ -387,6 +390,7 @@ namespace LoRaWAN {
     //% block="Send data $data to node address $address"
     //% address.min=1 address.max=255 address.defl=1
     //% data.defl="hello"
+    //% weight=160
     //% group="CONNECT_NODE"
     export function sendData(address: number, data: string): void {}
 
@@ -395,6 +399,7 @@ namespace LoRaWAN {
      */
     //% blockId=lorawan_get_data
     //% block="Obtain node data"
+    //% weight=150
     //% group="CONNECT_NODE"
     export function getData(): string {
         return "下发数据";
@@ -414,6 +419,7 @@ namespace LoRaWAN {
     //% appeui.defl="DFDFDFDF00000000"
     //% devType.defl=LoRaDevType.CLASS_C
     //% inlineInputMode=external
+    //% weight=140
     //% group="CONNECT_GATEWAY"
     export function connectOtaaGateway(band: LoRaBand, appeui: string, appkey: string, devType: LoRaDevType): void {}
 
@@ -432,6 +438,7 @@ namespace LoRaWAN {
     //% appSkey.defl="89888888888888888888888888888888"
     //% devAddr.defl="DF000011"
     //% inlineInputMode=external
+    //% weight=130
     //% group="CONNECT_GATEWAY"
     export function connectAbpGateway(band: LoRaBand, nwkSkey: string, appSkey: string, devAddr: string, devType: LoRaDevType): void {}
 
@@ -440,6 +447,7 @@ namespace LoRaWAN {
      */
     //% blockId=lorawan_connect_gateway
     //% block="Establish Gateway connection"
+    //% weight=120
     //% group="CONNECT_GATEWAY"
     export function connectGateway(): void {}
 
@@ -448,6 +456,7 @@ namespace LoRaWAN {
      */
     //% blockId=lorawan_is_connected
     //% block="Connect Gateway successfully"
+    //% weight=110
     //% group="CONNECT_GATEWAY"
     export function isConnected(): number {
         return 0;
@@ -455,10 +464,12 @@ namespace LoRaWAN {
 
     /**
      * 给网关发送数据
+     * @param data 数据
      */
     //% blockId=lorawan_send_gateway_data
     //% block="Send data $data to Gateway"
     //% data.defl="hello"
+    //% weight=100
     //% group="CONNECT_GATEWAY"
     export function sendGatewayData(data: string): void {}
 
@@ -467,6 +478,7 @@ namespace LoRaWAN {
      */
     //% blockId=lorawan_get_gateway_data
     //% block="Obtain Gateway data"
+    //% weight=90
     //% group="CONNECT_GATEWAY"
     export function getGatewayData(): string {
         return "下发数据";
@@ -484,6 +496,7 @@ namespace LoRaWAN {
     //% eirp.defl=LoRaEirp868.DBM16
     //% sf.defl=LoRaSF868.SF12
     //% inlineInputMode=external
+    //% weight=80
     //% advanced=true
     export function connectNodeAdvanced868(freq: LoRaFreq868, eirp: LoRaEirp868, sf: LoRaSF868): void {}
 
@@ -499,6 +512,7 @@ namespace LoRaWAN {
     //% eirp.defl=LoRaEirp915.DBM22
     //% sf.defl=LoRaSF915.SF10
     //% inlineInputMode=external
+    //% weight=70
     //% advanced=true
     export function connectNodeAdvanced915(freq: LoRaFreq915, eirp: LoRaEirp915, sf: LoRaSF915): void {}
 
@@ -514,6 +528,7 @@ namespace LoRaWAN {
     //% eirp.defl=LoRaEirp470.DBM19
     //% sf.defl=LoRaSF470.SF12
     //% inlineInputMode=external
+    //% weight=60
     //% advanced=true
     export function connectNodeAdvanced470(freq: LoRaFreq470, eirp: LoRaEirp470, sf: LoRaSF470): void {}
 
@@ -533,6 +548,7 @@ namespace LoRaWAN {
     //% adr.shadow="toggleOnOff"
     //% packetType.defl=LoRaPacketType.UNCONFIRMED_PACKET
     //% inlineInputMode=external
+    //% weight=50
     //% advanced=true
     export function connectGatewayAdvanced868(dr: LoRaDr868, eirp: LoRaEirp868, adr: boolean, packetType: LoRaPacketType): void {}
 
@@ -553,6 +569,7 @@ namespace LoRaWAN {
     //% adr.shadow="toggleOnOff"
     //% packetType.defl=LoRaPacketType.UNCONFIRMED_PACKET
     //% inlineInputMode=external
+    //% weight=40
     //% advanced=true
     export function connectGatewayAdvanced915(dr: LoRaDr915, eirp: LoRaEirp915, subband: LoRaSubBand915, adr: boolean, packetType: LoRaPacketType): void { }
     
@@ -573,16 +590,20 @@ namespace LoRaWAN {
     //% adr.shadow="toggleOnOff"
     //% packetType.defl=LoRaPacketType.UNCONFIRMED_PACKET
     //% inlineInputMode=external
+    //% weight=30
     //% advanced=true
     export function connectGatewayAdvanced470(dr: LoRaDr470, eirp: LoRaEirp470, subband: LoRaSubBand470, adr: boolean, packetType: LoRaPacketType): void { }
     
 
     /**
      * 通过发送特定的指令，可以查询节点的配置参数或者设置节点
+     * @param cmd 指令
+     * @returns 
      */
     //% blockId=lora_send_command
     //% block="Send command $cmd and obtain return information"
     //% cmd.defl=LoRaCommand.QUERY_DEVEUI
+    //% weight=20
     //% advanced=true
     export function sendCommand(cmd: LoRaCommand): string { 
         return "返回的信息"
