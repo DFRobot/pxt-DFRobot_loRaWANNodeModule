@@ -350,7 +350,7 @@ enum LoRaCommand {
 //% groups=['CONNECT_NODE', 'CONNECT_GATEWAY']
 namespace LoRaWAN {
     /**
-     * 初始化模块的I2C地址以及相关配置
+     * Initialize module I2C address and configurations
      */
     //% blockId=lorawan_initialize
     //% block="Node initialize"
@@ -359,9 +359,9 @@ namespace LoRaWAN {
     export function initialize(): void {}
 
     /**
-     * 选择节点通信频段和设置节点LoRa地址
-     * @param band 地区选择
-     * @param address 设备地址
+     * Select node communication band and set node LoRa address
+     * @param band Region selection
+     * @param address Device address
      */
     //% blockId=lorawan_config_node
     //% block="Connect node initial configuration| $band| $address"
@@ -373,7 +373,7 @@ namespace LoRaWAN {
     export function configNode(band: LoRaBand, address: number): void {}
 
     /**
-     * 开始连接节点
+     * Start connecting the node
      */
     //% blockId=lorawan_connect_node
     //% block="Establish node connection"
@@ -382,9 +382,9 @@ namespace LoRaWAN {
     export function connectNode(): void {}
 
     /**
-     * 给特定地址（范围1~255，0是违法地址不能填写）的节点发送数据
-     * @param address 设备地址
-     * @param data 发送的数据
+     * Send data to a node at a specific address (range 1-255, 0 is invalid)
+     * @param address Device address
+     * @param data Data to send
      */
     //% blockId=lorawan_send_data
     //% block="Send data $data to node address $address"
@@ -395,7 +395,7 @@ namespace LoRaWAN {
     export function sendData(address: number, data: string): void {}
 
     /**
-     * 获取节点数据
+     * Get node data
      */
     //% blockId=lorawan_get_data
     //% block="Obtain node data"
@@ -406,11 +406,11 @@ namespace LoRaWAN {
     }
 
     /**
-     * 节点连接网关，选择OTAA入网方式，并进行必要的参数配置
-     * @param band 地区选择
-     * @param appeui 应用EUI
-     * @param appkey 应用密钥
-     * @param devType 设备类型
+     * Connect node to gateway using OTAA and configure necessary parameters
+     * @param band Region selection
+     * @param appeui App EUI
+     * @param appkey App key
+     * @param devType Device type
      */
     //% blockId=lorawan_connect_otaa_gateway
     //% block="Connect Gateway OTAA configuration| Region: $band| APPEUI: $appeui| APPKEY: $appkey| Device Class:$devType"
@@ -424,12 +424,12 @@ namespace LoRaWAN {
     export function connectOtaaGateway(band: LoRaBand, appeui: string, appkey: string, devType: LoRaDevType): void {}
 
     /**
-     * 节点连接网关，选择ABP入网方式，并进行必要的参数配置
-     * @param band 地区选择
-     * @param nwkSkey 网络会话密钥
-     * @param appSkey 应用会话密钥
-     * @param devAddr 设备地址
-     * @param devType 设备类型
+     * Connect node to gateway using ABP and configure necessary parameters
+     * @param band Region selection
+     * @param nwkSkey Network session key
+     * @param appSkey App session key
+     * @param devAddr Device address
+     * @param devType Device type
      */
     //% blockId=lorawan_connect_abp_gateway
     //% block="Connect Gateway ABP configuration| Region: $band| Device Address: $devAddr| Network Session Key: $nwkSkey| APP Session Key: $appSkey| Device Class:$devType"
@@ -443,7 +443,7 @@ namespace LoRaWAN {
     export function connectAbpGateway(band: LoRaBand, nwkSkey: string, appSkey: string, devAddr: string, devType: LoRaDevType): void {}
 
     /**
-     * 开始连接网关，发送入网包给网关
+     * Start connecting to the gateway and send join request
      */
     //% blockId=lorawan_connect_gateway
     //% block="Establish Gateway connection"
@@ -452,7 +452,7 @@ namespace LoRaWAN {
     export function connectGateway(): void {}
 
     /**
-     * 判断节点是否入网成功。如果返回为真（ture），则表示连接网关成功
+     * Check if node successfully joined. Returns true if connected
      */
     //% blockId=lorawan_is_connected
     //% block="Connect Gateway successfully"
@@ -463,8 +463,8 @@ namespace LoRaWAN {
     }
 
     /**
-     * 给网关发送数据
-     * @param data 数据
+     * Send data to the gateway
+     * @param data data
      */
     //% blockId=lorawan_send_gateway_data
     //% block="Send data $data to Gateway"
@@ -474,7 +474,7 @@ namespace LoRaWAN {
     export function sendGatewayData(data: string): void {}
 
     /**
-     * 获取网关数据
+     * Get gateway data
      */
     //% blockId=lorawan_get_gateway_data
     //% block="Obtain Gateway data"
@@ -485,10 +485,10 @@ namespace LoRaWAN {
     }
 
     /**
-     * 连接868MHz节点高级配置
-     * @param freq 通信频点
-     * @param eirp 发射功率
-     * @param sf 发生信道
+     * Advanced configuration for connecting to 868MHz node
+     * @param freq Frequency
+     * @param eirp Transmit power
+     * @param sf Spreading factor
      */
     //% blockId=lorawan_connect_node_advanced_868
     //% block="Connect 868MHz node advanced configuration| Frequency(FREQ): $freq| Equivalent Isotroplcally Radiated Power(EIRP): $eirp| Bandwidth(BW): 125kHz| Spreading Factor Channel(SF): $sf"
@@ -501,10 +501,10 @@ namespace LoRaWAN {
     export function connectNodeAdvanced868(freq: LoRaFreq868, eirp: LoRaEirp868, sf: LoRaSF868): void {}
 
     /**
-     * 连接915MHz节点高级配置
-     * @param freq 通信频点
-     * @param eirp 发射功率
-     * @param sf 发生信道
+     * Advanced configuration for connecting to 915MHz node
+     * @param freq Frequency
+     * @param eirp Transmit power
+     * @param sf Spreading factor
      */
     //% blockId=lorawan_connect_node_advanced_915
     //% block="Connect 915MHz node advanced configuration| Frequency(FREQ): $freq| Equivalent Isotroplcally Radiated Power(EIRP): $eirp| Bandwidth(BW): 125kHz| Spreading Factor Channel(SF): $sf"
@@ -517,10 +517,10 @@ namespace LoRaWAN {
     export function connectNodeAdvanced915(freq: LoRaFreq915, eirp: LoRaEirp915, sf: LoRaSF915): void {}
 
     /**
-     * 连接470MHz节点高级配置
-     * @param freq 通信频点
-     * @param eirp 发射功率
-     * @param sf 发生信道
+     * Advanced configuration for connecting to 470MHz node
+     * @param freq Frequency
+     * @param eirp Transmit power
+     * @param sf Spreading factor
      */
     //% blockId=lorawan_connect_node_advanced_470
     //% block="Connect 470MHz node advanced configuration| Frequency(FREQ): $freq| Equivalent Isotroplcally Radiated Power(EIRP): $eirp| Bandwidth(BW): 125kHz| Spreading Factor Channel(SF): $sf"
@@ -533,12 +533,11 @@ namespace LoRaWAN {
     export function connectNodeAdvanced470(freq: LoRaFreq470, eirp: LoRaEirp470, sf: LoRaSF470): void {}
 
     /**
-     * 连接868MHz网关高级配置
-     * @param dr 通信频率
-     * @param eirp 发射功率
-     * @param subband 通信子频带
-     * @param adr 自适应速率
-     * @param packetType 数据包类型
+     * Advanced configuration for connecting to 868MHz gateway
+     * @param dr Data rate
+     * @param eirp Transmit power
+     * @param adr Adaptive data rate
+     * @param packetType Packet type
      */
     //% blockId=lorawan_connect_gateway_advanced_868
     //% block="Connect 868MHz gateway advanced configuration| Communication DateRate(DateRate): $dr| Transmission Power(EIRP): $eirp| Adaptive DataRate(ADR): $adr| Packet Type: $packetType"
@@ -553,12 +552,12 @@ namespace LoRaWAN {
     export function connectGatewayAdvanced868(dr: LoRaDr868, eirp: LoRaEirp868, adr: boolean, packetType: LoRaPacketType): void {}
 
     /**
-     * 连接915MHz网关高级配置
-     * @param dr 通信频率
-     * @param eirp 发射功率
-     * @param subband 通信子频带
-     * @param adr 自适应速率
-     * @param packetType 数据包类型
+     * Advanced configuration for connecting to 915MHz gateway
+     * @param dr Data rate
+     * @param eirp Transmit power
+     * @param subband Subband
+     * @param adr Adaptive data rate
+     * @param packetType Packet type
      */
     //% blockId=lorawan_connect_gateway_advanced_915
     //% block="Connect 915MHz gateway advanced configuration| Communication DateRate(DateRate): $dr| Transmission Power(EIRP): $eirp| Communication SubBand(SubBand): $subband| Adaptive DataRate(ADR): $adr| Packet Type: $packetType"
@@ -574,12 +573,12 @@ namespace LoRaWAN {
     export function connectGatewayAdvanced915(dr: LoRaDr915, eirp: LoRaEirp915, subband: LoRaSubBand915, adr: boolean, packetType: LoRaPacketType): void { }
     
     /**
-     * 连接470MHz网关高级配置
-     * @param dr 通信频率
-     * @param eirp 发射功率
-     * @param subband 通信子频带
-     * @param adr 自适应速率
-     * @param packetType 数据包类型
+     * Advanced configuration for connecting to 470MHz gateway
+     * @param dr Data rate
+     * @param eirp Transmit power
+     * @param subband Subband
+     * @param adr Adaptive data rate
+     * @param packetType Packet type
      */
     //% blockId=lorawan_connect_gateway_advanced_470
     //% block="Connect 470MHz gateway advanced configuration| Communication DateRate(DateRate): $dr| Transmission Power(EIRP): $eirp| Communication SubBand(SubBand): $subband| Adaptive DataRate(ADR): $adr| Packet Type: $packetType"
@@ -596,9 +595,8 @@ namespace LoRaWAN {
     
 
     /**
-     * 通过发送特定的指令，可以查询节点的配置参数或者设置节点
-     * @param cmd 指令
-     * @returns 
+     * Send commands to query or configure node
+     * @param cmd Command
      */
     //% blockId=lora_send_command
     //% block="Send command $cmd and obtain return information"
