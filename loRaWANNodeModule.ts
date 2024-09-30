@@ -1,17 +1,17 @@
 enum LoRaBand {
-    //% block="868"
-    EU868 = "EU868",
-    //% block="915"
-    US915 = "US915",
-    //% block="433"
-    CN470 = "CN470",
+    //% block="EU868"
+    EU868,
+    //% block="US915"
+    US915,
+    //% block="CN470"
+    CN470,
 }
 
 enum LoRaDevType {
     //% block="CLASS_A"
-    CLASS_A = "A",
+    CLASS_A,
     //% block="CLASS_C"
-    CLASS_C = "C",
+    CLASS_C,
 }
 
 enum LoRaFreq868 {
@@ -307,43 +307,43 @@ enum LoRaPacketType {
 
 enum LoRaCommand {
     //% block="Query DEVEUI"
-    QUERY_DEVEUI = "AT+DEVEUI?",
+    QUERY_DEVEUI,
     //% block="Query JOINEUI"
-    QUERY_JOINEUI = "AT+JOINEUI?",
+    QUERY_JOINEUI,
     //% block="Query DEVADDR"
-    QUERY_DEVADDR = "AT+DEVADDR?",
+    QUERY_DEVADDR,
     //% block="Query NWKSKEY"
-    QUERY_NWKSKEY = "AT+NWKSKEY?",
+    QUERY_NWKSKEY,
     //% block="Query APPSKEY"
-    QUERY_APPSKEY = "AT+APPSKEY?",
+    QUERY_APPSKEY,
     //% block="Query Join Type (JOINTYPE)"
-    QUERY_JOINTYPE = "AT+JOINTYPE?",
+    QUERY_JOINTYPE,
     //% block="Query Join Status (JOIN)"
-    QUERY_JOIN = "AT+JOIN?",
+    QUERY_JOIN,
     //% block="Query Communication Port (PORT)"
-    QUERY_PORT = "AT+PORT?",
+    QUERY_PORT,
     //% block="Query Communication Frequency (FREQS)"
-    QUERY_FREQS = "AT+FREQS?",
+    QUERY_FREQS,
     //% block="Query Current Region (REGION)"
-    QUERY_REGION = "AT+REGION?",
+    QUERY_REGION,
     //% block="Query SUBBAND"
-    QUERY_SUBBAND = "AT+SUBBAND?",
+    QUERY_SUBBAND,
     //% block="Query Transmit Power (EIPR)"
-    QUERY_EIRP = "AT+EIRP?",
+    QUERY_EIRP,
     //% block="Query Data Rate (DATARATE)"
-    QUERY_DATARATE = "AT+DATARATE?",
+    QUERY_DATARATE,
     //% block="Query SNR"
-    QUERY_SNR = "AT+SNR?",
+    QUERY_SNR,
     //% block="Query RSSI"
-    QUERY_RSSI = "AT+RSSI?",
+    QUERY_RSSI,
     //% block="Query Packet Type (TYPE)"
-    QUERY_UPLINKTYPE = "AT+UPLINKTYPE?",
+    QUERY_UPLINKTYPE,
     //% block="Query Device Class (CLASS)"
-    QUERY_CLASS = "AT+CLASS?",
+    QUERY_CLASS,
     //% block="Query Adaptive Data Rate (ADR)"
-    QUERY_ADR = "AT+ADR?",
+    QUERY_ADR,
     //% block="Restart (REBOOT)"
-    REBOOT = "AT+REBOOT"
+    REBOOT
 }
 
 //% color="#FFD43B" icon="\uf09e"
@@ -364,7 +364,7 @@ namespace LoRaWAN {
      * @param address Device address
      */
     //% blockId=lorawan_config_node
-    //% block="Connect node initial configuration| $band| $address"
+    //% block="Connect node initial configuration | Region: $band| Device Address: $address"
     //% band.defl=LoRaBand.EU868
     //% address.min=1 address.max=255 address.defl=1
     //% inlineInputMode=external
