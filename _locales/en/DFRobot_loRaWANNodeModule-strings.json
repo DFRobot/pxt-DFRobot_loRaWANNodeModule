@@ -58,7 +58,7 @@
   "LoRaEirp868.DBM12|block": "DBM12",
   "LoRaEirp868.DBM14|block": "DBM14",
   "LoRaEirp868.DBM16|block": "DBM16",
-  "LoRaEirp868.DBM22|block": "DBM22",
+  "LoRaEirp868.DBM22|block": "DBM22 (applicable for 868.5MHz communication frequency)",
   "LoRaEirp868.DBM2|block": "DBM2",
   "LoRaEirp868.DBM4|block": "DBM4",
   "LoRaEirp868.DBM6|block": "DBM6",
