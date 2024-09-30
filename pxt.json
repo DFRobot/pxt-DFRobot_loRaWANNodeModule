@@ -1,5 +1,5 @@
 {
-    "name": "DFRobot_loRaWANNodeModule",
+    "name": "loRaWANNodeModule",
     "version": "0.0.0",
     "description": "Gravity: LoRaWAN Node Module",
     "license": "MIT",
@@ -13,10 +13,10 @@
         "main.blocks",
         "main.ts",
         "loRaWANNodeModule.ts",
-        "_locales/en/DFRobot_loRaWANNodeModule-jsdoc-strings.json",
-        "_locales/en/DFRobot_loRaWANNodeModule-strings.json",
-        "_locales/zh/DFRobot_loRaWANNodeModule-jsdoc-strings.json",
-        "_locales/zh/DFRobot_loRaWANNodeModule-strings.json"
+        "_locales/en/loRaWANNodeModule-jsdoc-strings.json",
+        "_locales/en/loRaWANNodeModule-strings.json",
+        "_locales/zh/loRaWANNodeModule-jsdoc-strings.json",
+        "_locales/zh/loRaWANNodeModule-strings.json"
     ],
     "testFiles": [
         "test.ts"

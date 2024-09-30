@@ -1,24 +1,17 @@
+# LoRaWAN Node Module
 
-> Open this page at [https://.github.io//](https://.github.io//)
+## Basic usage
 
-## Use as Extension
+## License
 
-This repository can be added as an **extension** in MakeCode.
+MIT
 
-* open []()
-* click on **New Project**
-* click on **Extensions** under the gearwheel menu
-* search for **https://github.com/** and import
+Copyright (c) 2020, microbit/micropython Chinese community  
 
-## Edit this project
+## Supported targets
 
-To edit this repository in MakeCode.
+* for PXT/microbit
 
-* open []()
-* click on **Import** then click on **Import URL**
-* paste **https://github.com/** and click import
-
-#### Metadata (used for search, rendering)
-
-* for PXT/
-<script src="https://makecode.com/gh-pages-embed.js"></script><script>makeCodeRender("{{ site.makecode.home_url }}", "{{ site.github.owner_name }}/{{ site.github.repository_name }}");</script>
+```package
+loRaWANNodeModule=github:DFRobot/pxt-DFRobot_loRaWANNodeModule
+```
