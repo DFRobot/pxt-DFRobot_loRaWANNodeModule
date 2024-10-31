@@ -151,6 +151,7 @@
   "LoRaWAN.connectOtaaGateway|block": "Connect Gateway OTAA configuration | Region: $band| APPEUI: $appeui| APPKEY: $appkey| Device Class:$devType",
   "LoRaWAN.getData|block": "Obtain node data",
   "LoRaWAN.getGatewayData|block": "Obtain Gateway data",
+  "LoRaWAN.init|block": "Set node I2C address $addr",
   "LoRaWAN.initialize|block": "Node initialize",
   "LoRaWAN.isConnected|block": "Connect Gateway successfully",
   "LoRaWAN.sendData|block": "Send data $data to node address $address",

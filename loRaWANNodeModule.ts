@@ -349,8 +349,25 @@ enum LoRaCommand {
 //% color="#FFD43B" icon="\uf09e"
 //% groups=['CONNECT_NODE', 'CONNECT_GATEWAY']
 namespace LoRaWAN {
+    let _I2CAddr = 32;
+    let _deviceAddr = 0;
+    let _deviceClass = LoRaDevType.CLASS_A;
+
     /**
-     * Initialize module I2C address and configurations
+     * Initialize module I2C address 
+     * @param address is i2c address, eg: 32
+     */
+    //% blockId=lorawan_init
+    //% block="Set node I2C address $addr"
+    //% addr.defl="32"
+    //% weight=190
+    //% group="CONNECT_NODE"
+    export function init(addr: number): void{
+        _I2CAddr = addr;
+    }
+
+    /**
+     * Initialize module
      */
     //% blockId=lorawan_initialize
     //% block="Node initialize"

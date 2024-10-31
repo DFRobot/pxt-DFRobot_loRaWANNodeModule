@@ -151,6 +151,7 @@
   "LoRaWAN.connectOtaaGateway|block": "连接网关OTAA配置 | 地区选择: $band| APPEUI: $appeui| APPKEY: $appkey| 设备类型:$devType",
   "LoRaWAN.getData|block": "获取节点数据",
   "LoRaWAN.getGatewayData|block": "获取网关数据",
+  "LoRaWAN.init|block": "配置节点I2C地址 $addr",
   "LoRaWAN.initialize|block": "节点初始化",
   "LoRaWAN.isConnected|block": "连接网关成功",
   "LoRaWAN.sendData|block": "给节点地址 $address 发送数据 $data",

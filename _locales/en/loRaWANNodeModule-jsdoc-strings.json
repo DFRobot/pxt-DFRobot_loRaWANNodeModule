@@ -46,6 +46,8 @@
   "LoRaWAN.connectOtaaGateway|param|devType": "Device type",
   "LoRaWAN.getData": "Get node data",
   "LoRaWAN.getGatewayData": "Get gateway data",
+  "LoRaWAN.init": "Set node I2C address",
+  "LoRaWAN.init|param|addr": "I2C address",
   "LoRaWAN.initialize": "Initialize module I2C address and configurations",
   "LoRaWAN.isConnected": "Check if node successfully joined. Returns true if connected",
   "LoRaWAN.sendCommand": "Send commands to query or configure node",
