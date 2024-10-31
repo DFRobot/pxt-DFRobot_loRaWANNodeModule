@@ -164,6 +164,7 @@
   "LoRaWAN.sendCommand|block": "发送指令 $cmd 并获取返回信息",
   "LoRaWAN|block": "LoRaWAN节点模块",
   "{id:category}LoRaWAN": "LoRaWAN节点模块",
+  "{id:group}INIT": "初始化",
   "{id:group}CONNECT_GATEWAY": "连接网关",
   "{id:group}CONNECT_NODE": "连接节点"
 }

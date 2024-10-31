@@ -164,6 +164,7 @@
   "LoRaWAN.sendCommand|block": "Send command $cmd and obtain return information",
   "LoRaWAN|block": "LoRaWAN Node Module",
   "{id:category}LoRaWAN": "LoRaWAN Node Module",
+  "{id:group}INIT": "Initialization",
   "{id:group}CONNECT_GATEWAY": "Connect Gateway",
   "{id:group}CONNECT_NODE": "Connect Node"
 }

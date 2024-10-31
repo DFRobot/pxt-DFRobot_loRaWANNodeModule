@@ -347,7 +347,7 @@ enum LoRaCommand {
 }
 
 //% color="#FFD43B" icon="\uf09e"
-//% groups=['CONNECT_NODE', 'CONNECT_GATEWAY']
+//% groups=['INIT', 'CONNECT_NODE', 'CONNECT_GATEWAY']
 namespace LoRaWAN {
     /**
      * Initialize module I2C address and configurations
@@ -355,7 +355,7 @@ namespace LoRaWAN {
     //% blockId=lorawan_initialize
     //% block="Node initialize"
     //% weight=180
-    //% group="CONNECT_NODE"
+    //% group="INIT"
     export function initialize(): void {}
 
     /**
