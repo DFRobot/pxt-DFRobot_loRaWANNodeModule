@@ -349,6 +349,23 @@ enum LoRaCommand {
 //% color="#FFD43B" icon="\uf09e"
 //% groups=['INIT', 'CONNECT_NODE', 'CONNECT_GATEWAY']
 namespace LoRaWAN {
+    let _I2CAddr = 32;
+
+    let _deviceAddr = 0;
+
+    let _appeSKey = pins.createBuffer(33);
+    let _nwkSKey = pins.createBuffer(33);
+    let _isOtaa = true
+    let _deviceClass = LoRaDevType.CLASS_A; //
+    let _dataRate = LoRaDr868.DR4;
+    let _classType = LoRaDevType.CLASS_C; //
+    let _txPower = LoRaEirp868.DBM10; //
+    let _adr = false;
+    let _subBand = 0;
+    let _region = LoRaBand.EU868;
+    let _devAddr = 0;//
+    let _joinType = 1; // 0 ABP, 1 OTAA, 2 NONE
+    let _from = 0;//
     /**
      * Initialize module I2C address and configurations
      */
@@ -604,7 +621,140 @@ namespace LoRaWAN {
     //% weight=20
     //% advanced=true
     export function sendCommand(cmd: LoRaCommand): string { 
-        return "返回的信息"
+        let AT = ""
+        let indextype = 0 //0-表示一种处理方式，1表示另一种处理方式
+        let indexs = 0
+        let indexe = 0
+        switch (cmd) {
+            case LoRaCommand.QUERY_DEVEUI:
+                AT = "AT+DEVEUI?\r\n"
+                indexs = 8
+                indexe = 26
+                break
+            //case LoRaCommand.QUERY_JOINEUI:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+            case LoRaCommand.QUERY_DEVADDR:
+                AT = "AT+DEVADDR?\r\n"
+                indexs = 9
+                indexe = 17
+                break
+            //case LoRaCommand.QUERY_NWKSKEY:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+            //case LoRaCommand.QUERY_APPSKEY:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+            //case LoRaCommand.QUERY_JOINTYPE:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+            //case LoRaCommand.QUERY_JOIN:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+            //case LoRaCommand.QUERY_PORT:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+            //case LoRaCommand.QUERY_FREQS:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+            //case LoRaCommand.QUERY_REGION:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+            //case LoRaCommand.QUERY_SUBBAND:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+            case LoRaCommand.QUERY_EIRP:
+                AT = "AT+EIRP?\r\n"
+                indexs = 6
+                indexe = 7
+                break
+            case LoRaCommand.QUERY_DATARATE:
+                AT = "AT+DATARATE?\r\n"
+                indexs = 10
+                indexe = 11
+                break
+            case LoRaCommand.QUERY_SNR:
+                AT = "AT+SNR?\r\n"
+                indextype = 1
+                indexs = 5
+                indexe = 2
+                break
+            case LoRaCommand.QUERY_RSSI:
+                AT = "AT+RSSI?\r\n"
+                indextype = 1
+                indexs = 6
+                indexe = 2
+                break
+            //case LoRaCommand.QUERY_UPLINKTYPE:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+            //case LoRaCommand.QUERY_CLASS:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+            //case LoRaCommand.QUERY_ADR:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+            //case LoRaCommand.REBOOT:
+            //    AT = "AT+DEVEUI?\r\n"
+            //    indexs = 8
+            //    indexe = 26
+            //    break
+        }
+        if (AT.length == 0) {
+            return "AT len is zero"
+        }
+        let REG_READ_AT_LEN = 0x41
+        let REG_WRITE_AT = 0x40
+        let REG_READ_AT = 0x42
+        let _buf = pins.createBuffer(AT.length + 1);
+        _buf[0] = REG_WRITE_AT
+        for (let i = 0; i < AT.length; i++) {
+            _buf[1 + i] = AT.charCodeAt(i);
+        }
+        let bytesn = pins.i2cWriteBuffer(_I2CAddr, _buf);
+        //获取需要读取内容的字节数
+        pins.i2cWriteNumber(_I2CAddr, REG_READ_AT_LEN, NumberFormat.UInt8BE);
+        let rbn = pins.i2cReadNumber(_I2CAddr, NumberFormat.UInt8BE);
+        //读数据
+        pins.i2cWriteNumber(_I2CAddr, REG_READ_AT, NumberFormat.UInt8BE);
+        let rb = pins.i2cReadBuffer(_I2CAddr, rbn)
+
+        console.log("rb bytes: " + rb.toString() + "\r\n")
+        console.log("rb indexe: " + indexe + ", rb.length=" + rb.length + "\r\n")
+        if (rb.length >= indexe) {
+            if (indextype == 0) {
+                return rb.slice(indexs, indexe).toString()
+            } else if (indextype == 1) {
+                return rb.slice(indexs, rb.length - indexe).toString()
+            }
+
+        }
+        return rb.toString()
+    
     }
 }
 

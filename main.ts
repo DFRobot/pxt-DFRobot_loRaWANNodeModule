@@ -1,1 +1,15 @@
-
+basic.pause(1000)
+for (let index = 0; index < 1; index++) {
+    serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_DEVEUI))
+    basic.pause(1000)
+    serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_DEVADDR))
+    basic.pause(1000)
+    serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_EIRP))
+    basic.pause(1000)
+    serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_DATARATE))
+    basic.pause(1000)
+    serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_SNR))
+    basic.pause(1000)
+    serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_RSSI))
+    basic.pause(1000)
+}
