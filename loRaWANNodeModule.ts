@@ -349,6 +349,10 @@ namespace LoRaWAN {
     let _joinType = 1; // 0 ABP, 1 OTAA, 2 NONE
     let _from = 0;//
     let debug = false;
+
+    let _REG_READ_AT_LEN = 65;//0x41
+    let _REG_WRITE_AT = 64; //0x40
+    let _REG_READ_AT = 66; //0x42
     /**
      * Initialize module I2C address and configurations
      */
@@ -382,11 +386,9 @@ namespace LoRaWAN {
     //% group="CONNECT_NODE"
     export function configNode(band: LoRaBand, address: number): void {
         let AT = ""
+        sendATCommand("AT+LORAMODE=LORA");
         setRegion(band)
-        debugLog(address.toString())
-        AT = "AT+DEVADDR=00000001" //+ address.toString()
-        debugLog(AT)
-        debugLog(sendATCommand(AT))
+        setLoRaAddr(address)
     }
 
     /**
@@ -415,8 +417,17 @@ namespace LoRaWAN {
     export function sendData(address: number, data: string): void {
         let AT = "AT+SEND="
         let hexaddr = address.toString()
-        debugLog("address="+hexaddr)
-        
+        let high = Math.trunc(address / 16);
+        let low = address % 16
+        AT += numberCovertAsciiString(high) + numberCovertAsciiString(low)
+        high = Math.trunc(_from / 16);
+        low = _from % 16
+        AT += numberCovertAsciiString(high) + numberCovertAsciiString(low)
+        AT += stringCovertAsciiString(data)
+
+        debugLog("sendData=" + AT)
+       
+        debugLog(sendATCommand(AT))
     }
 
     /**
@@ -426,8 +437,42 @@ namespace LoRaWAN {
     //% block="Obtain node data"
     //% weight=150
     //% group="CONNECT_NODE"
-    export function getData(): string {
-        return "下发数据";
+    export function getData(): boolean {
+        pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT_LEN, NumberFormat.UInt8LE);
+        let rbn = pins.i2cReadNumber(_I2CAddr, NumberFormat.UInt8LE);
+
+        //读数据
+        if (rbn > 0) {
+            pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT, NumberFormat.UInt8LE);
+            let rb = pins.i2cReadBuffer(_I2CAddr, rbn, true)
+            
+            if (rb.length >= 10 && rb.slice(0,6).toString() === "+RECV="){
+                let nrb = rb.slice(6)
+                let _nodeDatalen = nrb[4]
+                if (_nodeDatalen > 0){
+                    if (nrb[0] === 0xFF || nrb[0] === _from) {
+                        let _nodeData = nrb.slice(5, _nodeDatalen).toString().replaceAll("\r", "").replaceAll("\n", "")
+                        let _nodeRSSI = -nrb[2]
+                        let _nodeSNR = nrb[3] - 50
+                        let _nodeFrom = nrb[1]
+
+                        console.log("recv from:" + _nodeFrom + ", recv data: " + _nodeData + ", rssi=" + _nodeRSSI + ",snr=" + _nodeSNR)
+
+                        return true
+                    }
+                }
+            }
+            return false
+        }
+        return false;
+    }
+
+    //% block="Connect gateway advanced configuration Adaptive From:[from] Data: [data]  RSSI: [rssi]  SNR: [snr]"
+    //% blockType="hat"
+    //% from.shadow="string"
+    //% data.shadow="string"
+    //% snr.shadow="string"
+    export function P2PRecv(parameter: any, block: any) {
     }
 
     /**
@@ -543,7 +588,16 @@ namespace LoRaWAN {
     //% weight=90
     //% group="CONNECT_GATEWAY"
     export function getGatewayData(): string {
-        return "下发数据";
+        pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT_LEN, NumberFormat.UInt8LE);
+        let rbn = pins.i2cReadNumber(_I2CAddr, NumberFormat.UInt8LE);
+
+        //读数据
+        if (rbn > 0) {
+            pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT, NumberFormat.UInt8LE);
+            let rb = pins.i2cReadBuffer(_I2CAddr, rbn, true)
+            return rb.slice(3).toString().replaceAll("\r", "").replaceAll("\n", "")
+        }
+        return "";
     }
 
     /**
@@ -560,7 +614,12 @@ namespace LoRaWAN {
     //% inlineInputMode=external
     //% weight=80
     //% advanced=true
-    export function connectNodeAdvanced868(freq: LoRaFreq868, eirp: LoRaEirp868, sf: LoRaSF868): void {}
+    export function connectNodeAdvanced868(freq: LoRaFreq868, eirp: LoRaEirp868, sf: LoRaSF868): void {
+        setFreq(freq)
+        setEIRP(eirp)
+        setBW(125000)
+        setSF(sf)
+    }
 
     /**
      * Advanced configuration for connecting to 915MHz node
@@ -576,7 +635,12 @@ namespace LoRaWAN {
     //% inlineInputMode=external
     //% weight=70
     //% advanced=true
-    export function connectNodeAdvanced915(freq: LoRaFreq915, eirp: LoRaEirp915, sf: LoRaSF915): void {}
+    export function connectNodeAdvanced915(freq: LoRaFreq915, eirp: LoRaEirp915, sf: LoRaSF915): void {
+        setFreq(freq)
+        setEIRP(eirp)
+        setBW(125000)
+        setSF(sf)
+    }
 
     /**
      * Advanced configuration for connecting to 470MHz node
@@ -592,7 +656,12 @@ namespace LoRaWAN {
     //% inlineInputMode=external
     //% weight=60
     //% advanced=true
-    export function connectNodeAdvanced470(freq: LoRaFreq470, eirp: LoRaEirp470, sf: LoRaSF470): void {}
+    export function connectNodeAdvanced470(freq: LoRaFreq470, eirp: LoRaEirp470, sf: LoRaSF470): void {
+        setFreq(freq)
+        setEIRP(eirp)
+        setBW(125000)
+        setSF(sf)
+    }
 
     /**
      * Advanced configuration for connecting to 868MHz gateway
@@ -602,16 +671,19 @@ namespace LoRaWAN {
      * @param packetType Packet type
      */
     //% blockId=lorawan_connect_gateway_advanced_868
-    //% block="Connect 868MHz gateway advanced configuration| Communication DateRate(DateRate): $dr| Transmission Power(EIRP): $eirp| Adaptive DataRate(ADR): $adr| Packet Type: $packetType"
+    //% block="Connect 868MHz gateway advanced configuration| Communication DateRate(DateRate): $dr| Transmission Power(EIRP): $eirp| Packet Type: $packetType"
     //% dr.defl=LoRaDr868.DR5
     //% eirp.defl=LoRaEirp868.DBM16
-    //% adr.defl=false
-    //% adr.shadow="toggleOnOff"
     //% packetType.defl=LoRaPacketType.UNCONFIRMED_PACKET
     //% inlineInputMode=external
     //% weight=50
     //% advanced=true
-    export function connectGatewayAdvanced868(dr: LoRaDr868, eirp: LoRaEirp868, adr: boolean, packetType: LoRaPacketType): void {}
+    export function connectGatewayAdvanced868(dr: LoRaDr868, eirp: LoRaEirp868, packetType: LoRaPacketType): void {
+        setDataRate(dr)
+        setEIRP(eirp)
+        setPacketType(packetType)
+        enableADR(false)
+    }
 
     /**
      * Advanced configuration for connecting to 915MHz gateway
@@ -622,17 +694,20 @@ namespace LoRaWAN {
      * @param packetType Packet type
      */
     //% blockId=lorawan_connect_gateway_advanced_915
-    //% block="Connect 915MHz gateway advanced configuration| Communication DateRate(DateRate): $dr| Transmission Power(EIRP): $eirp| Communication SubBand(SubBand): $subband| Adaptive DataRate(ADR): $adr| Packet Type: $packetType"
-    //% dr.defl=LoRaDr915.DR4
+    //% block="Connect 915MHz gateway advanced configuration| Communication DateRate(DateRate): $dr| Transmission Power(EIRP): $eirp| Communication SubBand(SubBand): $subband| Packet Type: $packetType"
     //% eirp.defl=LoRaEirp915.DBM22
     //% subband.defl=LoRaSubBand915.SubBand8
-    //% adr.defl=false
-    //% adr.shadow="toggleOnOff"
     //% packetType.defl=LoRaPacketType.UNCONFIRMED_PACKET
     //% inlineInputMode=external
     //% weight=40
     //% advanced=true
-    export function connectGatewayAdvanced915(dr: LoRaDr915, eirp: LoRaEirp915, subband: LoRaSubBand915, adr: boolean, packetType: LoRaPacketType): void { }
+    export function connectGatewayAdvanced915(dr: LoRaDr915, eirp: LoRaEirp915, subband: LoRaSubBand915, packetType: LoRaPacketType): void {
+        setDataRate(dr)
+        setEIRP(eirp)
+        setPacketType(packetType)
+        enableADR(false)
+        setSubBand(subband)
+     }
     
     /**
      * Advanced configuration for connecting to 470MHz gateway
@@ -643,17 +718,21 @@ namespace LoRaWAN {
      * @param packetType Packet type
      */
     //% blockId=lorawan_connect_gateway_advanced_470
-    //% block="Connect 470MHz gateway advanced configuration| Communication DateRate(DateRate): $dr| Transmission Power(EIRP): $eirp| Communication SubBand(SubBand): $subband| Adaptive DataRate(ADR): $adr| Packet Type: $packetType"
+    //% block="Connect 470MHz gateway advanced configuration| Communication DateRate(DateRate): $dr| Transmission Power(EIRP): $eirp| Communication SubBand(SubBand): $subband| Packet Type: $packetType"
     //% dr.defl=LoRaDr470.DR5
     //% eirp.defl=LoRaEirp470.DBM19
     //% subband.defl=LoRaSubBand470.SubBand11
-    //% adr.defl=false
-    //% adr.shadow="toggleOnOff"
     //% packetType.defl=LoRaPacketType.UNCONFIRMED_PACKET
     //% inlineInputMode=external
     //% weight=30
     //% advanced=true
-    export function connectGatewayAdvanced470(dr: LoRaDr470, eirp: LoRaEirp470, subband: LoRaSubBand470, adr: boolean, packetType: LoRaPacketType): void { }
+    export function connectGatewayAdvanced470(dr: LoRaDr470, eirp: LoRaEirp470, subband: LoRaSubBand470, adr: boolean, packetType: LoRaPacketType): void {
+        setDataRate(dr)
+        setEIRP(eirp)
+        setPacketType(packetType)
+        enableADR(false)
+        setSubBand(subband)
+     }
     
 
     /**
@@ -798,7 +877,7 @@ namespace LoRaWAN {
     }
 
     function setAppEUI(appeui: string): boolean{
-        if (appeui.length != 8) {
+        if (appeui.length != 16) {
             debugLog("appeui error：Invalid length, expected 16 hex chars, only " + appeui.length)
             return false
         }
@@ -880,6 +959,105 @@ namespace LoRaWAN {
         return false
     }
 
+    function setPacketType(ptype: LoRaPacketType): boolean {
+        let ack = ""
+        switch (ptype){
+            case LoRaPacketType.UNCONFIRMED_PACKET:
+                ack = sendATCommand("AT+UPLINKTYPE=UNCONFIRMED")
+                break
+            case LoRaPacketType.CONFIRMED_PACKET:
+                ack = sendATCommand("AT+UPLINKTYPE=CONFIRMED")
+                break
+        }
+        
+        if (ack.includes("+UPLINKTYPE=OK")) {
+            return true
+        }
+        debugLog("setPacketType ack: " + ack)
+        return false
+    }
+
+    function setSubBand(subBand: number): boolean {
+        let ack = sendATCommand("AT+SUBBAND=" + subBand.toString())
+        if (ack.includes("+SUBBAND=OK")) {
+            return true
+        }
+        debugLog("setSubBand ack: " + ack)
+        return false
+    }
+
+    function enableADR(adr: boolean): boolean {
+        let ack = "" 
+        if (adr) {
+            ack = sendATCommand("AT+ADR=1")
+        }else{
+            ack = sendATCommand("AT+ADR=0")
+        }
+        if (ack.includes("+ADR=OK")) {
+            return true
+        }
+        debugLog("enableADR ack: " + ack)
+        return false
+    }
+
+    function setDataRate(dr: number): boolean {
+        let ack = sendATCommand("AT+DATARATE=" + dr.toString())
+        if (ack.includes("+DATARATE=OK")) {
+            return true
+        }
+        debugLog("setDataRate ack: " + ack)
+        return false
+    }
+
+    function setLoRaAddr(address: number): boolean {
+        let ack = sendATCommand("AT+LORAADDR=" + address.toString())
+        if (ack.includes("+LORAADDR=OK")){
+            _from = address
+            return true
+        }
+        debugLog("setLoRaAddr ack: " + ack)
+        return false
+    }
+
+    function setEIRP(eirp: number): boolean {
+        let ack = sendATCommand("AT+EIRP=" + eirp.toString())
+        if (ack.includes("+EIRP=OK")) {
+            return true
+        }
+        debugLog("setEIRP ack: " + ack)
+        return false
+    }
+
+    function setFreq(freq: number): boolean {
+        let ack = sendATCommand("AT+FREQS=" + freq.toString())
+        if (ack.includes("+FREQS=OK")) {
+            return true
+        }
+        debugLog("setFreq ack: " + ack)
+        return false
+    }
+
+    function setBW(bw: number): boolean {
+        let ack = sendATCommand("AT+BW=" + bw.toString())
+        console.log("AT+BW=" + bw.toString())
+        if (ack.includes("+BW=OK")) {
+            return true
+        }
+        debugLog("setBW ack: " + ack)
+        return false
+    }
+
+    function setSF(sf: number): boolean {
+        let ack = sendATCommand("AT+SF=" + sf.toString())
+        console.log("AT+SF=" + sf.toString())
+        if (ack.includes("+SF=OK")) {
+            return true
+        }
+        debugLog("setSF ack: " + ack)
+        return false
+    }
+    
+
     function stringCovertAsciiString(msg: string):string{
         let hexStr = "";
         debugLog("origin: " + msg)
@@ -928,9 +1106,7 @@ namespace LoRaWAN {
             return "AT len is zero"
         }
         cmd += "\r\n"
-        let _REG_READ_AT_LEN = 65;//0x41
-        let _REG_WRITE_AT = 64; //0x40
-        let _REG_READ_AT = 66; //0x42
+        
         let _buf = pins.createBuffer(cmd.length + 1);
         _buf[0] = _REG_WRITE_AT
         for (let i = 0; i < cmd.length; i++) {
@@ -951,7 +1127,7 @@ namespace LoRaWAN {
         if (rbn > 0){
             pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT, NumberFormat.UInt8LE);
             let rb = pins.i2cReadBuffer(_I2CAddr, rbn, true)
-            return rb.toString().replace("\r\n","")
+            return rb.toString().replaceAll("\r", "").replaceAll("\n", "")
         }
         return "no response."
        
