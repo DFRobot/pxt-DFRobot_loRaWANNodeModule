@@ -310,6 +310,11 @@ enum LoRaPacketType {
     CONFIRMED_PACKET,
 }
 
+enum LoRaJoinType {
+    ABP,
+    OTAA,
+}
+
 enum LoRaCommand {
     //% block="Query DEVEUI"
     QUERY_DEVEUI,
@@ -343,6 +348,7 @@ namespace LoRaWAN {
     let _devAddr = 0;//
     let _joinType = 1; // 0 ABP, 1 OTAA, 2 NONE
     let _from = 0;//
+    let debug = false;
     /**
      * Initialize module I2C address and configurations
      */
@@ -358,7 +364,8 @@ namespace LoRaWAN {
             basic.pause(1000)
         }
         //setTEXTTYPE(LoRaTEXTTYPE.ASCII_TYPE)
-        console.log(sendATCommand("AT+TEXTTYPE?"))
+        debugLog(sendATCommand("AT+TEXTTYPE?"))
+        debugLog(sendATCommand("AT+RECV=1"));
     }
 
     /**
@@ -376,10 +383,10 @@ namespace LoRaWAN {
     export function configNode(band: LoRaBand, address: number): void {
         let AT = ""
         setRegion(band)
-        console.log(address.toString())
+        debugLog(address.toString())
         AT = "AT+DEVADDR=00000001" //+ address.toString()
-        console.log(AT)
-        console.log(sendATCommand(AT))
+        debugLog(AT)
+        debugLog(sendATCommand(AT))
     }
 
     /**
@@ -391,7 +398,7 @@ namespace LoRaWAN {
     //% group="CONNECT_NODE"
     export function connectNode(): void {
         let AT = "AT+JOIN=1"
-        console.log(sendATCommand(AT))
+        debugLog(sendATCommand(AT))
     }
 
     /**
@@ -408,7 +415,7 @@ namespace LoRaWAN {
     export function sendData(address: number, data: string): void {
         let AT = "AT+SEND="
         let hexaddr = address.toString()
-        console.log("address="+hexaddr)
+        debugLog("address="+hexaddr)
         
     }
 
@@ -440,10 +447,13 @@ namespace LoRaWAN {
     //% weight=140
     //% group="CONNECT_GATEWAY"
     export function connectOtaaGateway(band: LoRaBand, appeui: string, appkey: string, devType: LoRaDevType): void {
+        _joinType = 1
         setRegion(band)
-        setAppEUI(appeui)
-        setAppKEY(appkey)
-        setDeiveClass(devType)
+        if (setJoinType(LoRaJoinType.OTAA)){
+            setAppEUI(appeui)
+            setAppKEY(appkey)
+            setDeiveClass(devType)
+        }
     }
 
     /**
@@ -463,7 +473,17 @@ namespace LoRaWAN {
     //% inlineInputMode=external
     //% weight=130
     //% group="CONNECT_GATEWAY"
-    export function connectAbpGateway(band: LoRaBand, nwkSkey: string, appSkey: string, devAddr: string, devType: LoRaDevType): void {}
+    export function connectAbpGateway(band: LoRaBand, nwkSkey: string, appSkey: string, devAddr: string, devType: LoRaDevType): void {
+        _joinType = 0
+        sendATCommand("AT+LORAMODE=LORAWAN");
+        setRegion(band)
+        if(setJoinType(LoRaJoinType.ABP)){
+            setNwkSKey(nwkSkey)
+            setDeiveClass(devType)
+            setAppSKey(appSkey)
+            setDevAddr(devAddr)
+        }
+    }
 
     /**
      * Start connecting to the gateway and send join request
@@ -476,7 +496,7 @@ namespace LoRaWAN {
         let AT = "AT+JOIN=1"
         let ack = sendATCommand(AT)
         if (!ack.includes("+JOIN=OK")){
-            console.log("connectGateway ack: " + ack)
+            debugLog("connectGateway ack: " + ack)
         }
     }
 
@@ -493,7 +513,7 @@ namespace LoRaWAN {
         if (ack.includes("+JOIN=1")){
             return true
         }
-        console.log("isConnected ack: " + ack)
+        debugLog("isConnected ack: " + ack)
         return false;
     }
 
@@ -511,7 +531,7 @@ namespace LoRaWAN {
         //let AT = "AT+SEND=" +data
         let ack = sendATCommand(AT)
         if (ack.includes("+SEND=FAIL")){
-            console.log("sendGatewayData ack: "+ack)
+            debugLog("sendGatewayData ack: "+ack)
         }
     }
 
@@ -683,19 +703,74 @@ namespace LoRaWAN {
         if (AT.length == 0) {
             return "AT len is zero"
         }
-        //console.log("rb bytes: " + rb.toString() + "\r\n")
-        //console.log("rb indexe: " + indexe + ", rb.length=" + rb.length + "\r\n")
-        //if (rb.length >= indexe) {
-        //    if (indextype == 0) {
-        //        return rb.slice(indexs, indexe).toString()
-        //    } else if (indextype == 1) {
-        //        return rb.slice(indexs, rb.length - indexe).toString()
-        //    }
-        //}
         return sendATCommand(AT)
     
     }
-
+    function setJoinType(join: LoRaJoinType): boolean {
+        let ack = ""
+        switch (join){
+            case LoRaJoinType.ABP:
+                ack = sendATCommand("AT+JOINTYPE=ABP")
+                break
+            case LoRaJoinType.OTAA:
+                ack = sendATCommand("AT+JOINTYPE=OTAA")
+                break
+        }
+        if (ack.includes("+JOINTYPE=OK")){
+            return true
+        }
+        debugLog("setJoinType ack"+ack)
+        return false
+    }
+    function setAppSKey(appskey: string): boolean{
+        if (appskey.length != 32) {
+            debugLog("appskey error：Invalid length, expected 32 hex chars, only " + appskey.length)
+            return false
+        }
+        if (!isHexString(appskey)) {
+            debugLog("appskey error：Invalid hex string, " + appskey)
+            return false
+        }
+        
+        let ack = sendATCommand("AT+APPSKEY=" + appskey.toUpperCase())
+        if (ack.includes("+APPSKEY=OK")){
+            return true
+        }
+        debugLog("setAppSKey ack"+ack)
+        return false
+    }
+    function setNwkSKey(nwkSKey: string): boolean {
+        if (nwkSKey.length != 32) {
+            debugLog("appskey error：Invalid length, expected 32 hex chars, only " + nwkSKey.length)
+            return false
+        }
+        if (!isHexString(nwkSKey)) {
+            debugLog("appskey error：Invalid hex string, " + nwkSKey)
+            return false
+        }
+        let ack = sendATCommand("AT+NWKSKEY=" + nwkSKey.toUpperCase())
+        if (ack.includes("+NWKSKEY=OK")) {
+            return true
+        }
+        debugLog("setNwkSKey ack" + ack)
+        return false
+    }
+    function setDevAddr(devAddr: string): boolean {
+        if (devAddr.length != 8) {
+            debugLog("devAddr error：Invalid length, expected 8 hex chars, only " + devAddr.length)
+            return false
+        }
+        if (!isHexString(devAddr)) {
+            debugLog("appskey error：Invalid hex string, " + devAddr)
+            return false
+        }
+        let ack = sendATCommand("AT+DEVADDR=" + devAddr.toUpperCase())
+        if (ack.includes("+DEVADDR=OK")) {
+            return true
+        }
+        debugLog("setDevAddr ack" + ack)
+        return false
+    }
     function setRegion(band: LoRaBand): boolean{
         let ack = ""
         switch (band){
@@ -709,7 +784,7 @@ namespace LoRaWAN {
                 ack = sendATCommand("AT+REGION=CN470")
                 break
             default:
-                console.log("unsupported region")
+                debugLog("unsupported region")
                 return false
         }
 
@@ -717,27 +792,43 @@ namespace LoRaWAN {
             _region = band
             return true
         }
-        console.log("setRegion ack: " + ack)
+        debugLog("setRegion ack: " + ack)
        
        return false
     }
 
     function setAppEUI(appeui: string): boolean{
+        if (appeui.length != 8) {
+            debugLog("appeui error：Invalid length, expected 16 hex chars, only " + appeui.length)
+            return false
+        }
+        if (!isHexString(appeui)) {
+            debugLog("appeui error：Invalid hex string, " + appeui)
+            return false
+        }
         let AT = "AT+JOINEUI=" + appeui.toUpperCase()
         let ack = sendATCommand(AT)
         if (ack.includes("+JOINEUI=OK") == true) {
             return true
         }
-        console.log("setAppEUI ack: " + ack)
+        debugLog("setAppEUI ack: " + ack)
         return false
     }
     function setAppKEY(appkey: string): boolean {
+        if (appkey.length != 32) {
+            debugLog("appeui error：Invalid length, expected 32 hex chars, only " + appkey.length)
+            return false
+        }
+        if (!isHexString(appkey)) {
+            debugLog("appkey error：Invalid hex string, " + appkey)
+            return false
+        }
         let AT = "AT+APPKEY=" + appkey.toUpperCase()
         let ack = sendATCommand(AT)
         if (ack.includes("+APPKEY=OK") == true) {
             return true
         }
-        console.log("setAppKEY ack: " + ack)
+        debugLog("setAppKEY ack: " + ack)
         return false
     }
 
@@ -754,7 +845,7 @@ namespace LoRaWAN {
         if (ack.includes("+CLASS=OK") == true) {
             return true
         }
-        console.log("setDeiveClass ack: " + ack)
+        debugLog("setDeiveClass ack: " + ack)
         return false
     }
     
@@ -771,13 +862,13 @@ namespace LoRaWAN {
         if (ack.includes("+TEXTTYPE=OK")){
             return true
         }
-        console.log("setTEXTTYPE ack: " + ack)
+        debugLog("setTEXTTYPE ack: " + ack)
         return false
     }
 
     function nodereboot():void{
         let ack = sendATCommand("AT+REBOOT")
-        console.log("nodereboot ack"+ack)
+        debugLog("nodereboot ack"+ack)
     }
 
     function nodeStartCheck(): boolean{
@@ -785,13 +876,13 @@ namespace LoRaWAN {
         if (ack.includes("OK")){
             return true
         }
-        console.log("nodeStartCheck ack: " + ack)
+        debugLog("nodeStartCheck ack: " + ack)
         return false
     }
 
     function stringCovertAsciiString(msg: string):string{
         let hexStr = "";
-        console.log("origin: " + msg)
+        debugLog("origin: " + msg)
         for (let i = 0; i < msg.length; i++) {
             let charCode = msg.charCodeAt(i);
             let hexCode = ""
@@ -800,7 +891,7 @@ namespace LoRaWAN {
             hexCode = numberCovertAsciiString(high) + numberCovertAsciiString(low)
             hexStr += hexCode;
         }
-        console.log("hex str: " + hexStr)
+        debugLog("hex str: " + hexStr)
         return hexStr
     }
 
@@ -864,6 +955,23 @@ namespace LoRaWAN {
         }
         return "no response."
        
+    }
+
+    function isHexString(value: string): boolean {
+        const hexChars = "0123456789ABCDEFabcdef";
+        for (let i = 0; i < value.length; i++){
+            if (!hexChars.includes(value[i])){
+                return false
+            }
+        }
+        return true
+    }
+
+    function debugLog(value: any): void{
+        debug = true
+        if (debug){
+            console.log(value)
+        }
     }
 }
 
