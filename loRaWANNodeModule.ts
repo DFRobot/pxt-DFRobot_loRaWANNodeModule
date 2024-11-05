@@ -1,3 +1,8 @@
+enum LoRaTEXTTYPE {
+    ASCII_TYPE,
+    HEX_TYPE,
+}
+
 enum LoRaBand {
     //% block="EU868"
     EU868,
@@ -308,42 +313,14 @@ enum LoRaPacketType {
 enum LoRaCommand {
     //% block="Query DEVEUI"
     QUERY_DEVEUI,
-    //% block="Query JOINEUI"
-    QUERY_JOINEUI,
     //% block="Query DEVADDR"
     QUERY_DEVADDR,
-    //% block="Query NWKSKEY"
-    QUERY_NWKSKEY,
-    //% block="Query APPSKEY"
-    QUERY_APPSKEY,
-    //% block="Query Join Type (JOINTYPE)"
-    QUERY_JOINTYPE,
-    //% block="Query Join Status (JOIN)"
-    QUERY_JOIN,
-    //% block="Query Communication Port (PORT)"
-    QUERY_PORT,
-    //% block="Query Communication Frequency (FREQS)"
-    QUERY_FREQS,
-    //% block="Query Current Region (REGION)"
-    QUERY_REGION,
-    //% block="Query SUBBAND"
-    QUERY_SUBBAND,
-    //% block="Query Transmit Power (EIPR)"
-    QUERY_EIRP,
-    //% block="Query Data Rate (DATARATE)"
-    QUERY_DATARATE,
     //% block="Query SNR"
     QUERY_SNR,
     //% block="Query RSSI"
     QUERY_RSSI,
-    //% block="Query Packet Type (TYPE)"
-    QUERY_UPLINKTYPE,
-    //% block="Query Device Class (CLASS)"
-    QUERY_CLASS,
-    //% block="Query Adaptive Data Rate (ADR)"
-    QUERY_ADR,
-    //% block="Restart (REBOOT)"
-    REBOOT
+    //% block="Query NETID"
+    QUERY_NETID,
 }
 
 //% color="#FFD43B" icon="\uf09e"
@@ -373,7 +350,16 @@ namespace LoRaWAN {
     //% block="Node initialize"
     //% weight=180
     //% group="INIT"
-    export function initialize(): void {}
+    export function initialize(): void {
+        _I2CAddr = 32
+        nodereboot()
+        
+        while (nodeStartCheck() == false){
+            basic.pause(1000)
+        }
+        //setTEXTTYPE(LoRaTEXTTYPE.ASCII_TYPE)
+        console.log(sendATCommand("AT+TEXTTYPE?"))
+    }
 
     /**
      * Select node communication band and set node LoRa address
@@ -387,7 +373,14 @@ namespace LoRaWAN {
     //% inlineInputMode=external
     //% weight=170
     //% group="CONNECT_NODE"
-    export function configNode(band: LoRaBand, address: number): void {}
+    export function configNode(band: LoRaBand, address: number): void {
+        let AT = ""
+        setRegion(band)
+        console.log(address.toString())
+        AT = "AT+DEVADDR=00000001" //+ address.toString()
+        console.log(AT)
+        console.log(sendATCommand(AT))
+    }
 
     /**
      * Start connecting the node
@@ -396,7 +389,10 @@ namespace LoRaWAN {
     //% block="Establish node connection"
     //% weight=165
     //% group="CONNECT_NODE"
-    export function connectNode(): void {}
+    export function connectNode(): void {
+        let AT = "AT+JOIN=1"
+        console.log(sendATCommand(AT))
+    }
 
     /**
      * Send data to a node at a specific address (range 1-255, 0 is invalid)
@@ -409,7 +405,12 @@ namespace LoRaWAN {
     //% data.defl="hello"
     //% weight=160
     //% group="CONNECT_NODE"
-    export function sendData(address: number, data: string): void {}
+    export function sendData(address: number, data: string): void {
+        let AT = "AT+SEND="
+        let hexaddr = address.toString()
+        console.log("address="+hexaddr)
+        
+    }
 
     /**
      * Get node data
@@ -438,7 +439,12 @@ namespace LoRaWAN {
     //% inlineInputMode=external
     //% weight=140
     //% group="CONNECT_GATEWAY"
-    export function connectOtaaGateway(band: LoRaBand, appeui: string, appkey: string, devType: LoRaDevType): void {}
+    export function connectOtaaGateway(band: LoRaBand, appeui: string, appkey: string, devType: LoRaDevType): void {
+        setRegion(band)
+        setAppEUI(appeui)
+        setAppKEY(appkey)
+        setDeiveClass(devType)
+    }
 
     /**
      * Connect node to gateway using ABP and configure necessary parameters
@@ -466,7 +472,13 @@ namespace LoRaWAN {
     //% block="Establish Gateway connection"
     //% weight=120
     //% group="CONNECT_GATEWAY"
-    export function connectGateway(): void {}
+    export function connectGateway(): void {
+        let AT = "AT+JOIN=1"
+        let ack = sendATCommand(AT)
+        if (!ack.includes("+JOIN=OK")){
+            console.log("connectGateway ack: " + ack)
+        }
+    }
 
     /**
      * Check if node successfully joined. Returns true if connected
@@ -475,8 +487,14 @@ namespace LoRaWAN {
     //% block="Connect Gateway successfully"
     //% weight=110
     //% group="CONNECT_GATEWAY"
-    export function isConnected(): number {
-        return 0;
+    export function isConnected(): boolean {
+        let AT = "AT+JOIN?"
+        let ack = sendATCommand(AT)
+        if (ack.includes("+JOIN=1")){
+            return true
+        }
+        console.log("isConnected ack: " + ack)
+        return false;
     }
 
     /**
@@ -488,7 +506,14 @@ namespace LoRaWAN {
     //% data.defl="hello"
     //% weight=100
     //% group="CONNECT_GATEWAY"
-    export function sendGatewayData(data: string): void {}
+    export function sendGatewayData(data: string): void {
+        let AT = "AT+SEND=" + stringCovertAsciiString(data) //+ data
+        //let AT = "AT+SEND=" +data
+        let ack = sendATCommand(AT)
+        if (ack.includes("+SEND=FAIL")){
+            console.log("sendGatewayData ack: "+ack)
+        }
+    }
 
     /**
      * Get gateway data
@@ -627,134 +652,220 @@ namespace LoRaWAN {
         let indexe = 0
         switch (cmd) {
             case LoRaCommand.QUERY_DEVEUI:
-                AT = "AT+DEVEUI?\r\n"
+                AT = "AT+DEVEUI?"
                 indexs = 8
                 indexe = 26
                 break
-            //case LoRaCommand.QUERY_JOINEUI:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
             case LoRaCommand.QUERY_DEVADDR:
-                AT = "AT+DEVADDR?\r\n"
+                AT = "AT+DEVADDR?"
                 indexs = 9
                 indexe = 17
                 break
-            //case LoRaCommand.QUERY_NWKSKEY:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
-            //case LoRaCommand.QUERY_APPSKEY:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
-            //case LoRaCommand.QUERY_JOINTYPE:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
-            //case LoRaCommand.QUERY_JOIN:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
-            //case LoRaCommand.QUERY_PORT:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
-            //case LoRaCommand.QUERY_FREQS:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
-            //case LoRaCommand.QUERY_REGION:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
-            //case LoRaCommand.QUERY_SUBBAND:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
-            case LoRaCommand.QUERY_EIRP:
-                AT = "AT+EIRP?\r\n"
-                indexs = 6
-                indexe = 7
-                break
-            case LoRaCommand.QUERY_DATARATE:
-                AT = "AT+DATARATE?\r\n"
-                indexs = 10
-                indexe = 11
-                break
             case LoRaCommand.QUERY_SNR:
-                AT = "AT+SNR?\r\n"
+                AT = "AT+SNR?"
                 indextype = 1
                 indexs = 5
                 indexe = 2
                 break
             case LoRaCommand.QUERY_RSSI:
-                AT = "AT+RSSI?\r\n"
+                AT = "AT+RSSI?"
                 indextype = 1
                 indexs = 6
                 indexe = 2
                 break
-            //case LoRaCommand.QUERY_UPLINKTYPE:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
-            //case LoRaCommand.QUERY_CLASS:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
-            //case LoRaCommand.QUERY_ADR:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
-            //case LoRaCommand.REBOOT:
-            //    AT = "AT+DEVEUI?\r\n"
-            //    indexs = 8
-            //    indexe = 26
-            //    break
+            case LoRaCommand.QUERY_NETID:
+                AT = "AT+NETID?"
+                indextype = 0
+                indexs = 7
+                indexe = 17
+                break
         }
         if (AT.length == 0) {
             return "AT len is zero"
         }
-        let REG_READ_AT_LEN = 0x41
-        let REG_WRITE_AT = 0x40
-        let REG_READ_AT = 0x42
-        let _buf = pins.createBuffer(AT.length + 1);
-        _buf[0] = REG_WRITE_AT
-        for (let i = 0; i < AT.length; i++) {
-            _buf[1 + i] = AT.charCodeAt(i);
-        }
-        let bytesn = pins.i2cWriteBuffer(_I2CAddr, _buf);
-        //获取需要读取内容的字节数
-        pins.i2cWriteNumber(_I2CAddr, REG_READ_AT_LEN, NumberFormat.UInt8BE);
-        let rbn = pins.i2cReadNumber(_I2CAddr, NumberFormat.UInt8BE);
-        //读数据
-        pins.i2cWriteNumber(_I2CAddr, REG_READ_AT, NumberFormat.UInt8BE);
-        let rb = pins.i2cReadBuffer(_I2CAddr, rbn)
-
-        console.log("rb bytes: " + rb.toString() + "\r\n")
-        console.log("rb indexe: " + indexe + ", rb.length=" + rb.length + "\r\n")
-        if (rb.length >= indexe) {
-            if (indextype == 0) {
-                return rb.slice(indexs, indexe).toString()
-            } else if (indextype == 1) {
-                return rb.slice(indexs, rb.length - indexe).toString()
-            }
-
-        }
-        return rb.toString()
+        //console.log("rb bytes: " + rb.toString() + "\r\n")
+        //console.log("rb indexe: " + indexe + ", rb.length=" + rb.length + "\r\n")
+        //if (rb.length >= indexe) {
+        //    if (indextype == 0) {
+        //        return rb.slice(indexs, indexe).toString()
+        //    } else if (indextype == 1) {
+        //        return rb.slice(indexs, rb.length - indexe).toString()
+        //    }
+        //}
+        return sendATCommand(AT)
     
     }
+
+    function setRegion(band: LoRaBand): boolean{
+        let ack = ""
+        switch (band){
+            case LoRaBand.EU868:
+                ack = sendATCommand("AT+REGION=EU868")
+                break
+            case LoRaBand.US915:
+                ack = sendATCommand("AT+REGION=US915")
+                break
+            case LoRaBand.CN470:
+                ack = sendATCommand("AT+REGION=CN470")
+                break
+            default:
+                console.log("unsupported region")
+                return false
+        }
+
+        if (ack.includes("+REGION=OK") == true){
+            _region = band
+            return true
+        }
+        console.log("setRegion ack: " + ack)
+       
+       return false
+    }
+
+    function setAppEUI(appeui: string): boolean{
+        let AT = "AT+JOINEUI=" + appeui.toUpperCase()
+        let ack = sendATCommand(AT)
+        if (ack.includes("+JOINEUI=OK") == true) {
+            return true
+        }
+        console.log("setAppEUI ack: " + ack)
+        return false
+    }
+    function setAppKEY(appkey: string): boolean {
+        let AT = "AT+APPKEY=" + appkey.toUpperCase()
+        let ack = sendATCommand(AT)
+        if (ack.includes("+APPKEY=OK") == true) {
+            return true
+        }
+        console.log("setAppKEY ack: " + ack)
+        return false
+    }
+
+    function setDeiveClass(classtype: LoRaDevType): boolean {
+        let ack = ""
+        switch (classtype){
+            case LoRaDevType.CLASS_A:
+                ack = sendATCommand("AT+CLASS=CLASS_A")
+                break
+            case LoRaDevType.CLASS_C:
+                ack = sendATCommand("AT+CLASS=CLASS_C")
+                break
+        }
+        if (ack.includes("+CLASS=OK") == true) {
+            return true
+        }
+        console.log("setDeiveClass ack: " + ack)
+        return false
+    }
+    
+    function setTEXTTYPE(textype:LoRaTEXTTYPE):boolean{
+        let ack = ""
+        switch (textype){
+            case LoRaTEXTTYPE.ASCII_TYPE:
+                ack = sendATCommand("AT+TEXTTYPE=ASCII")
+                break
+            case LoRaTEXTTYPE.HEX_TYPE:
+                ack = sendATCommand("AT+TEXTTYPE=HEX")
+                break
+        }
+        if (ack.includes("+TEXTTYPE=OK")){
+            return true
+        }
+        console.log("setTEXTTYPE ack: " + ack)
+        return false
+    }
+
+    function nodereboot():void{
+        let ack = sendATCommand("AT+REBOOT")
+        console.log("nodereboot ack"+ack)
+    }
+
+    function nodeStartCheck(): boolean{
+        let ack = sendATCommand("AT")
+        if (ack.includes("OK")){
+            return true
+        }
+        console.log("nodeStartCheck ack: " + ack)
+        return false
+    }
+
+    function stringCovertAsciiString(msg: string):string{
+        let hexStr = "";
+        console.log("origin: " + msg)
+        for (let i = 0; i < msg.length; i++) {
+            let charCode = msg.charCodeAt(i);
+            let hexCode = ""
+            let high = Math.trunc(charCode / 16);
+            let low = charCode % 16
+            hexCode = numberCovertAsciiString(high) + numberCovertAsciiString(low)
+            hexStr += hexCode;
+        }
+        console.log("hex str: " + hexStr)
+        return hexStr
+    }
+
+    function numberCovertAsciiString(n: number): string{
+        // 0<= n <= 15
+        let hexCode = ""
+        switch (n) {
+            case 10:
+                hexCode = "A"
+                break
+            case 11:
+                hexCode = "B"
+                break
+            case 12:
+                hexCode = "C"
+                break
+            case 13:
+                hexCode = "D"
+                break
+            case 14:
+                hexCode = "E"
+                break
+            case 15:
+                hexCode = "F"
+                break
+            default:
+                hexCode = n.toString()
+        }
+        return hexCode
+    }
+
+    function sendATCommand(cmd: string): string {
+        if (cmd.length == 0) {
+            return "AT len is zero"
+        }
+        cmd += "\r\n"
+        let _REG_READ_AT_LEN = 65;//0x41
+        let _REG_WRITE_AT = 64; //0x40
+        let _REG_READ_AT = 66; //0x42
+        let _buf = pins.createBuffer(cmd.length + 1);
+        _buf[0] = _REG_WRITE_AT
+        for (let i = 0; i < cmd.length; i++) {
+            _buf[1 + i] = cmd.charCodeAt(i);
+        }
+        pins.i2cWriteBuffer(_I2CAddr, _buf);
+        //basic.pause(800)
+        //获取需要读取内容的字节数
+        pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT_LEN, NumberFormat.UInt8LE);
+        let rbn = 0;
+        let cnt = 0
+        while (rbn == 0 && cnt < 3){
+            rbn = pins.i2cReadNumber(_I2CAddr, NumberFormat.UInt8LE);
+            basic.pause(800)
+            cnt++
+        }
+        //读数据
+        if (rbn > 0){
+            pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT, NumberFormat.UInt8LE);
+            let rb = pins.i2cReadBuffer(_I2CAddr, rbn, true)
+            return rb.toString().replace("\r\n","")
+        }
+        return "no response."
+       
+    }
 }
+
+
 
