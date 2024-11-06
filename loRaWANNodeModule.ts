@@ -3,6 +3,22 @@ enum LoRaTEXTTYPE {
     HEX_TYPE,
 }
 
+enum LoRaP2PContext {
+    //% block="data"
+    DATA,
+    //% block="source address"
+    SourceAddress,
+    //% block="snr"
+    SNR,
+}
+
+enum LoRaDownlinkPktContext {
+    //% block="data"
+    DATA,
+    //% block="snr"
+    SNR,
+}
+
 enum LoRaBand {
     //% block="EU868"
     EU868,
@@ -332,27 +348,43 @@ enum LoRaCommand {
 //% groups=['INIT', 'CONNECT_NODE', 'CONNECT_GATEWAY']
 namespace LoRaWAN {
     let _I2CAddr = 32;
-
-    let _deviceAddr = 0;
-
-    let _appeSKey = pins.createBuffer(33);
-    let _nwkSKey = pins.createBuffer(33);
-    let _isOtaa = true
-    let _deviceClass = LoRaDevType.CLASS_A; //
-    let _dataRate = LoRaDr868.DR4;
-    let _classType = LoRaDevType.CLASS_C; //
-    let _txPower = LoRaEirp868.DBM10; //
-    let _adr = false;
-    let _subBand = 0;
-    let _region = LoRaBand.EU868;
-    let _devAddr = 0;//
-    let _joinType = 1; // 0 ABP, 1 OTAA, 2 NONE
     let _from = 0;//
-    let debug = false;
+    let _debug = false;
 
     let _REG_READ_AT_LEN = 65;//0x41
     let _REG_WRITE_AT = 64; //0x40
     let _REG_READ_AT = 66; //0x42
+
+    let _nodeDatalen = 0
+    let _nodeData = ""
+    let _nodeRSSI = 0
+    let _nodeSNR = 0
+    let _nodeFrom = 0
+
+    let _gwdata = ""
+    let _gwdataSnr = 0
+    /**
+     * serial debug switch 
+     */
+    //% blockId=lorawan_open_debug
+    //% block="open debug"
+    //% weight=200
+    //% group="INIT"
+    export function openDebug(): void {
+        _debug = true
+    }
+
+    /**
+     * serial debug switch 
+     */
+    //% blockId=lorawan_close_debug
+    //% block="close debug"
+    //% weight=190
+    //% group="INIT"
+    export function closeDebug(): void {
+        _debug = false
+    }
+
     /**
      * Initialize module I2C address and configurations
      */
@@ -373,29 +405,10 @@ namespace LoRaWAN {
     }
 
     /**
-     * Select node communication band and set node LoRa address
-     * @param band Region selection
-     * @param address Device address
-     */
-    //% blockId=lorawan_config_node
-    //% block="Connect node initial configuration | Region: $band| Device Address: $address"
-    //% band.defl=LoRaBand.EU868
-    //% address.min=1 address.max=255 address.defl=1
-    //% inlineInputMode=external
-    //% weight=170
-    //% group="CONNECT_NODE"
-    export function configNode(band: LoRaBand, address: number): void {
-        let AT = ""
-        sendATCommand("AT+LORAMODE=LORA");
-        setRegion(band)
-        setLoRaAddr(address)
-    }
-
-    /**
      * Start connecting the node
      */
     //% blockId=lorawan_connect_node
-    //% block="Establish node connection"
+    //% block="P2P device start working"
     //% weight=165
     //% group="CONNECT_NODE"
     export function connectNode(): void {
@@ -434,7 +447,7 @@ namespace LoRaWAN {
      * Get node data
      */
     //% blockId=lorawan_get_data
-    //% block="Obtain node data"
+    //% block="P2P packet reception"
     //% weight=150
     //% group="CONNECT_NODE"
     export function getData(): boolean {
@@ -448,16 +461,21 @@ namespace LoRaWAN {
             
             if (rb.length >= 10 && rb.slice(0,6).toString() === "+RECV="){
                 let nrb = rb.slice(6)
-                let _nodeDatalen = nrb[4]
+                _nodeDatalen = nrb[4]
                 if (_nodeDatalen > 0){
                     if (nrb[0] === 0xFF || nrb[0] === _from) {
-                        let _nodeData = nrb.slice(5, _nodeDatalen).toString().replaceAll("\r", "").replaceAll("\n", "")
-                        let _nodeRSSI = -nrb[2]
-                        let _nodeSNR = nrb[3] - 50
-                        let _nodeFrom = nrb[1]
-
-                        console.log("recv from:" + _nodeFrom + ", recv data: " + _nodeData + ", rssi=" + _nodeRSSI + ",snr=" + _nodeSNR)
-
+                        let _nodebuf = nrb.slice(5, _nodeDatalen)
+                        _nodeData = nrb.slice(5, _nodeDatalen).toString().replaceAll("\r", "").replaceAll("\n", "")
+                        _nodeRSSI = -nrb[2]
+                        _nodeSNR = nrb[3] - 50
+                        _nodeFrom = nrb[1]
+                        let hexstr = ""
+                        //for (let i = 0; i < _nodebuf.length; i++){
+                        //    let high = Math.trunc(_nodebuf[i] / 16);
+                        //    let low = _nodebuf[i] % 16
+                        //    hexstr += numberCovertAsciiString(high) + numberCovertAsciiString(low)
+                        //}
+                        debugLog("recv from:" + _nodeFrom + ", recv data: " + _nodeData + ", data len: " + _nodeDatalen  +", rssi=" + _nodeRSSI + ",snr=" + _nodeSNR)
                         return true
                     }
                 }
@@ -467,12 +485,19 @@ namespace LoRaWAN {
         return false;
     }
 
-    //% block="Connect gateway advanced configuration Adaptive From:[from] Data: [data]  RSSI: [rssi]  SNR: [snr]"
-    //% blockType="hat"
-    //% from.shadow="string"
-    //% data.shadow="string"
-    //% snr.shadow="string"
-    export function P2PRecv(parameter: any, block: any) {
+    //% blockId=lorawan_p2p_read_data_pkt
+    //% block="P2P read data packet| datapkttype: $pktdata"
+    //% weight=145
+    //% group="CONNECT_NODE"
+    export function p2pReadDataPacket(pktdata: LoRaP2PContext): string{
+        switch (pktdata){
+            case LoRaP2PContext.DATA:
+                return _nodeData
+            case LoRaP2PContext.SNR:
+                return _nodeSNR.toString()
+            case LoRaP2PContext.SourceAddress:
+                return _nodeFrom.toString()
+        }
     }
 
     /**
@@ -492,7 +517,6 @@ namespace LoRaWAN {
     //% weight=140
     //% group="CONNECT_GATEWAY"
     export function connectOtaaGateway(band: LoRaBand, appeui: string, appkey: string, devType: LoRaDevType): void {
-        _joinType = 1
         setRegion(band)
         if (setJoinType(LoRaJoinType.OTAA)){
             setAppEUI(appeui)
@@ -519,7 +543,6 @@ namespace LoRaWAN {
     //% weight=130
     //% group="CONNECT_GATEWAY"
     export function connectAbpGateway(band: LoRaBand, nwkSkey: string, appSkey: string, devAddr: string, devType: LoRaDevType): void {
-        _joinType = 0
         sendATCommand("AT+LORAMODE=LORAWAN");
         setRegion(band)
         if(setJoinType(LoRaJoinType.ABP)){
@@ -533,14 +556,29 @@ namespace LoRaWAN {
     /**
      * Start connecting to the gateway and send join request
      */
-    //% blockId=lorawan_connect_gateway
-    //% block="Establish Gateway connection"
+    //% blockId=lorawan_connect_gateway_otaa
+    //% block="OTAA connecting to the gateway"
     //% weight=120
     //% group="CONNECT_GATEWAY"
-    export function connectGateway(): void {
+    export function connectGatewayOfOTAA(): void {
         let AT = "AT+JOIN=1"
         let ack = sendATCommand(AT)
         if (!ack.includes("+JOIN=OK")){
+            debugLog("connectGateway ack: " + ack)
+        }
+    }
+
+    /**
+     * Start connecting to the gateway and send join request
+     */
+    //% blockId=lorawan_connect_gateway_abp
+    //% block="ABP device start working"
+    //% weight=115
+    //% group="CONNECT_GATEWAY"
+    export function connectGatewayOfABP(): void {
+        let AT = "AT+JOIN=1"
+        let ack = sendATCommand(AT)
+        if (!ack.includes("+JOIN=OK")) {
             debugLog("connectGateway ack: " + ack)
         }
     }
@@ -584,20 +622,54 @@ namespace LoRaWAN {
      * Get gateway data
      */
     //% blockId=lorawan_get_gateway_data
-    //% block="Obtain Gateway data"
+    //% block="Received gateway data"
     //% weight=90
     //% group="CONNECT_GATEWAY"
-    export function getGatewayData(): string {
+    export function getGatewayData(): boolean {
         pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT_LEN, NumberFormat.UInt8LE);
         let rbn = pins.i2cReadNumber(_I2CAddr, NumberFormat.UInt8LE);
-
+       
         //读数据
         if (rbn > 0) {
+            
             pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT, NumberFormat.UInt8LE);
             let rb = pins.i2cReadBuffer(_I2CAddr, rbn, true)
-            return rb.slice(3).toString().replaceAll("\r", "").replaceAll("\n", "")
+            if (_debug){
+                debugLog("rbn==" + rbn)
+                for (let i = 0; i < rb.length; i++) {
+                    debugLog("index=" + i + ",data=" + rb[i])
+                }
+            }
+
+            if (rb.length >= 8 && rb.slice(0, 6).toString() === "+RECV=") {
+                let nrb = rb.slice(6)
+                let gwlen = nrb[2]
+                if (gwlen > 0) {
+                    _gwdata = nrb.slice(3, gwlen).toString().replaceAll("\r", "").replaceAll("\n", "")
+                    _gwdataSnr = nrb[1] - 50
+                    return true
+                }
+            }
+          
         }
-        return "";
+        return false;
+        
+    }
+
+    /**
+     * Get gateway data
+     */
+    //% blockId=lorawan_read_gateway_downlink_packet
+    //% block="Read gateway downlink packet $dpdata"
+    //% weight=85
+    //% group="CONNECT_GATEWAY"
+    export function readGatewayDownlinkPacket(dpdata: LoRaDownlinkPktContext): string {
+        switch (dpdata){
+            case LoRaDownlinkPktContext.DATA:
+                return _gwdata
+            case LoRaDownlinkPktContext.SNR:
+                return _gwdataSnr.toString()
+        }
     }
 
     /**
@@ -607,14 +679,17 @@ namespace LoRaWAN {
      * @param sf Spreading factor
      */
     //% blockId=lorawan_connect_node_advanced_868
-    //% block="Connect 868MHz node advanced configuration| Frequency(FREQ): $freq| Equivalent Isotroplcally Radiated Power(EIRP): $eirp| Bandwidth(BW): 125kHz| Spreading Factor Channel(SF): $sf"
+    //% block="P2P mode 868MHz node configuration| Device Address: $address| Frequency(FREQ): $freq| Equivalent Isotroplcally Radiated Power(EIRP): $eirp| Bandwidth(BW): 125kHz| Spreading Factor Channel(SF): $sf"
+    //% address.min=1 address.max=255 address.defl=1
     //% freq.defl=LoRaFreq868.EU868_8681
     //% eirp.defl=LoRaEirp868.DBM16
     //% sf.defl=LoRaSF868.SF12
     //% inlineInputMode=external
     //% weight=80
     //% advanced=true
-    export function connectNodeAdvanced868(freq: LoRaFreq868, eirp: LoRaEirp868, sf: LoRaSF868): void {
+    export function connectNodeAdvanced868(address: number, freq: LoRaFreq868, eirp: LoRaEirp868, sf: LoRaSF868): void {
+        debugLog(sendATCommand("AT+LORAMODE=LORA"));
+        setLoRaAddr(address)
         setFreq(freq)
         setEIRP(eirp)
         setBW(125000)
@@ -628,14 +703,17 @@ namespace LoRaWAN {
      * @param sf Spreading factor
      */
     //% blockId=lorawan_connect_node_advanced_915
-    //% block="Connect 915MHz node advanced configuration| Frequency(FREQ): $freq| Equivalent Isotroplcally Radiated Power(EIRP): $eirp| Bandwidth(BW): 125kHz| Spreading Factor Channel(SF): $sf"
+    //% block="P2P mode 915MHz node configuration| Device Address: $address | Frequency(FREQ): $freq| Equivalent Isotroplcally Radiated Power(EIRP): $eirp| Bandwidth(BW): 125kHz| Spreading Factor Channel(SF): $sf"
+    //% address.min=1 address.max=255 address.defl=1
     //% freq.defl=LoRaFreq915.US915_9030
     //% eirp.defl=LoRaEirp915.DBM22
     //% sf.defl=LoRaSF915.SF10
     //% inlineInputMode=external
     //% weight=70
     //% advanced=true
-    export function connectNodeAdvanced915(freq: LoRaFreq915, eirp: LoRaEirp915, sf: LoRaSF915): void {
+    export function connectNodeAdvanced915(address: number, freq: LoRaFreq915, eirp: LoRaEirp915, sf: LoRaSF915): void {
+        sendATCommand("AT+LORAMODE=LORA"); 
+        setLoRaAddr(address)
         setFreq(freq)
         setEIRP(eirp)
         setBW(125000)
@@ -649,14 +727,17 @@ namespace LoRaWAN {
      * @param sf Spreading factor
      */
     //% blockId=lorawan_connect_node_advanced_470
-    //% block="Connect 470MHz node advanced configuration| Frequency(FREQ): $freq| Equivalent Isotroplcally Radiated Power(EIRP): $eirp| Bandwidth(BW): 125kHz| Spreading Factor Channel(SF): $sf"
+    //% block="P2P mode 470MHz node configuration| Device Address: $address| Frequency(FREQ): $freq| Equivalent Isotroplcally Radiated Power(EIRP): $eirp| Bandwidth(BW): 125kHz| Spreading Factor Channel(SF): $sf"
+    //% address.min=1 address.max=255 address.defl=1
     //% freq.defl=LoRaFreq470.CN470_4863
     //% eirp.defl=LoRaEirp470.DBM19
     //% sf.defl=LoRaSF470.SF12
     //% inlineInputMode=external
     //% weight=60
     //% advanced=true
-    export function connectNodeAdvanced470(freq: LoRaFreq470, eirp: LoRaEirp470, sf: LoRaSF470): void {
+    export function connectNodeAdvanced470(address: number,freq: LoRaFreq470, eirp: LoRaEirp470, sf: LoRaSF470): void {
+        sendATCommand("AT+LORAMODE=LORA");
+        setLoRaAddr(address)
         setFreq(freq)
         setEIRP(eirp)
         setBW(125000)
@@ -868,7 +949,6 @@ namespace LoRaWAN {
         }
 
         if (ack.includes("+REGION=OK") == true){
-            _region = band
             return true
         }
         debugLog("setRegion ack: " + ack)
@@ -1039,7 +1119,6 @@ namespace LoRaWAN {
 
     function setBW(bw: number): boolean {
         let ack = sendATCommand("AT+BW=" + bw.toString())
-        console.log("AT+BW=" + bw.toString())
         if (ack.includes("+BW=OK")) {
             return true
         }
@@ -1049,7 +1128,6 @@ namespace LoRaWAN {
 
     function setSF(sf: number): boolean {
         let ack = sendATCommand("AT+SF=" + sf.toString())
-        console.log("AT+SF=" + sf.toString())
         if (ack.includes("+SF=OK")) {
             return true
         }
@@ -1144,8 +1222,7 @@ namespace LoRaWAN {
     }
 
     function debugLog(value: any): void{
-        debug = true
-        if (debug){
+        if (_debug){
             console.log(value)
         }
     }

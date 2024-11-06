@@ -5,20 +5,25 @@ BaudRate.BaudRate115200
 )
 basic.pause(5000)
 LoRaWAN.initialize()
-LoRaWAN.configNode(
+serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_DEVEUI))
+LoRaWAN.connectAbpGateway(
 LoRaBand.EU868,
-4
+"87888888888888888888888888888888",
+"89888888888888888888888888888888",
+"DF000011",
+LoRaDevType.CLASS_A
 )
-LoRaWAN.connectNodeAdvanced868(
-LoRaFreq868.EU868_8681,
+LoRaWAN.connectGatewayAdvanced868(
+LoRaDr868.DR5,
 LoRaEirp868.DBM16,
-LoRaSF868.SF12
+LoRaPacketType.UNCONFIRMED_PACKET
 )
-LoRaWAN.connectNode()
-serial.writeString("initialize complete!")
-loops.everyInterval(500, function () {
-    serial.writeString("")
-    if (LoRaWAN.getData()) {
-    	
-    }
+LoRaWAN.connectGatewayOfABP()
+serial.writeLine("initialize complete!")
+loops.everyInterval(10000, function () {
+    LoRaWAN.sendGatewayData("hello")
+    serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_SNR))
+    serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_RSSI))
+    serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_NETID))
+    serial.writeLine("")
 })
