@@ -7,16 +7,15 @@ basic.pause(5000)
 LoRaWAN.initialize()
 serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_DEVEUI))
 LoRaWAN.connectOtaaGateway(
-LoRaBand.US915,
+LoRaBand.EU868,
 "DFDFDFDF00000000",
 "0102030405060708090A0B0C0D0E0F10",
 LoRaDevType.CLASS_C
 )
-LoRaWAN.connectGatewayAdvanced915(
-LoRaDr915.DR3,
-LoRaEirp915.DBM22,
-LoRaSubBand915.SubBand2,
-LoRaPacketType.CONFIRMED_PACKET
+LoRaWAN.connectGatewayAdvanced868(
+LoRaDr868.DR4,
+LoRaEirp868.DBM16,
+LoRaPacketType.UNCONFIRMED_PACKET
 )
 LoRaWAN.connectGatewayOfOTAA()
 for (let index = 0; index < 50; index++) {

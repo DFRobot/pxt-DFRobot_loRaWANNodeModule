@@ -227,8 +227,6 @@ enum LoRaDr868 {
     DR4 = 4,
     //% block="DR5"
     DR5 = 5,
-    //% block="DR6"
-    DR6 = 6,
 }
 
 enum LoRaDr915 {
