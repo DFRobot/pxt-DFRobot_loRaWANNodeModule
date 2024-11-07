@@ -9,8 +9,6 @@
   "LoRaBand.US915|block": "US915",
   "LoRaCommand.QUERY_DEVADDR|block": "Query DEVADDR",
   "LoRaCommand.QUERY_DEVEUI|block": "Query DEVEUI",
-  "LoRaCommand.QUERY_RSSI|block": "Query RSSI",
-  "LoRaCommand.QUERY_SNR|block": "Query SNR",
   "LoRaCommand.QUERY_NETID|block": "Query NETID",
   "LoRaDevType.CLASS_A|block": "CLASS_A",
   "LoRaDevType.CLASS_C|block": "CLASS_C",

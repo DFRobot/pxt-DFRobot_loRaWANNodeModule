@@ -6,24 +6,31 @@ BaudRate.BaudRate115200
 basic.pause(5000)
 LoRaWAN.initialize()
 serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_DEVEUI))
-LoRaWAN.connectAbpGateway(
-LoRaBand.EU868,
-"87888888888888888888888888888888",
-"89888888888888888888888888888888",
-"DF000011",
-LoRaDevType.CLASS_A
+LoRaWAN.connectOtaaGateway(
+LoRaBand.US915,
+"DFDFDFDF00000000",
+"0102030405060708090A0B0C0D0E0F10",
+LoRaDevType.CLASS_C
 )
-LoRaWAN.connectGatewayAdvanced868(
-LoRaDr868.DR5,
-LoRaEirp868.DBM16,
+LoRaWAN.connectGatewayAdvanced915(
+LoRaDr915.DR3,
+LoRaEirp915.DBM22,
+LoRaSubBand915.SubBand2,
 LoRaPacketType.UNCONFIRMED_PACKET
 )
-LoRaWAN.connectGatewayOfABP()
-serial.writeLine("initialize complete!")
-loops.everyInterval(10000, function () {
-    LoRaWAN.sendGatewayData("hello")
-    serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_SNR))
-    serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_RSSI))
-    serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_NETID))
-    serial.writeLine("")
+LoRaWAN.connectGatewayOfOTAA()
+for (let index = 0; index < 50; index++) {
+    if (LoRaWAN.isConnected()) {
+        serial.writeLine("join success!")
+        break;
+    }
+    basic.pause(1000)
+}
+serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_DEVADDR))
+serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_NETID))
+loops.everyInterval(500, function () {
+    if (LoRaWAN.getGatewayData()) {
+        serial.writeLine("data: " + LoRaWAN.readGatewayDownlinkPacket(LoRaDownlinkPktContext.DATA) + ", snr: " + LoRaWAN.readGatewayDownlinkPacket(LoRaDownlinkPktContext.SNR))
+        serial.writeLine("")
+    }
 })

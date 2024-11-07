@@ -240,21 +240,6 @@ enum LoRaDr915 {
     DR2 = 2,
     //% block="DR3"
     DR3 = 3,
-    //% block="DR4"
-    DR4 = 4,
-
-    //% block="DR8"
-    DR8 = 8,
-    //% block="DR9"
-    DR9 = 9,
-    //% block="DR10"
-    DR10 = 10,
-    //% block="DR11"
-    DR11 = 11,
-    //% block="DR12"
-    DR12 = 12,
-    //% block="DR13"
-    DR13 = 13,
 }
 
 enum LoRaDr470 {
@@ -336,10 +321,6 @@ enum LoRaCommand {
     QUERY_DEVEUI,
     //% block="Query DEVADDR"
     QUERY_DEVADDR,
-    //% block="Query SNR"
-    QUERY_SNR,
-    //% block="Query RSSI"
-    QUERY_RSSI,
     //% block="Query NETID"
     QUERY_NETID,
 }
@@ -776,8 +757,9 @@ namespace LoRaWAN {
      */
     //% blockId=lorawan_connect_gateway_advanced_915
     //% block="Connect 915MHz gateway advanced configuration| Communication DateRate(DateRate): $dr| Transmission Power(EIRP): $eirp| Communication SubBand(SubBand): $subband| Packet Type: $packetType"
+    //% dr.defl=LoRaDr915.DR3
     //% eirp.defl=LoRaEirp915.DBM22
-    //% subband.defl=LoRaSubBand915.SubBand8
+    //% subband.defl=LoRaSubBand915.SubBand2
     //% packetType.defl=LoRaPacketType.UNCONFIRMED_PACKET
     //% inlineInputMode=external
     //% weight=40
@@ -826,45 +808,34 @@ namespace LoRaWAN {
     //% weight=20
     //% advanced=true
     export function sendCommand(cmd: LoRaCommand): string { 
-        let AT = ""
-        let indextype = 0 //0-表示一种处理方式，1表示另一种处理方式
-        let indexs = 0
-        let indexe = 0
+        let ack = ""
         switch (cmd) {
             case LoRaCommand.QUERY_DEVEUI:
-                AT = "AT+DEVEUI?"
-                indexs = 8
-                indexe = 26
+                ack = sendATCommand("AT+DEVEUI?")
+                if (ack.includes("+DEVEUI=") ){
+                    return ack.slice(8)
+                }else{
+                    return ack
+                }
                 break
             case LoRaCommand.QUERY_DEVADDR:
-                AT = "AT+DEVADDR?"
-                indexs = 9
-                indexe = 17
-                break
-            case LoRaCommand.QUERY_SNR:
-                AT = "AT+SNR?"
-                indextype = 1
-                indexs = 5
-                indexe = 2
-                break
-            case LoRaCommand.QUERY_RSSI:
-                AT = "AT+RSSI?"
-                indextype = 1
-                indexs = 6
-                indexe = 2
+                ack = sendATCommand("AT+DEVADDR?")
+                if (ack.includes("+DEVADDR=")) {
+                    return ack.slice(9)
+                } else {
+                    return ack
+                }
                 break
             case LoRaCommand.QUERY_NETID:
-                AT = "AT+NETID?"
-                indextype = 0
-                indexs = 7
-                indexe = 17
+                ack = sendATCommand("AT+NETID?")
+                if (ack.includes("+NETID=")) {
+                    return ack.slice(7)
+                } else {
+                    return ack
+                }
                 break
         }
-        if (AT.length == 0) {
-            return "AT len is zero"
-        }
-        return sendATCommand(AT)
-    
+        return ""
     }
     function setJoinType(join: LoRaJoinType): boolean {
         let ack = ""
@@ -1191,12 +1162,12 @@ namespace LoRaWAN {
             _buf[1 + i] = cmd.charCodeAt(i);
         }
         pins.i2cWriteBuffer(_I2CAddr, _buf);
-        //basic.pause(800)
+        basic.pause(800)
         //获取需要读取内容的字节数
-        pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT_LEN, NumberFormat.UInt8LE);
         let rbn = 0;
         let cnt = 0
-        while (rbn == 0 && cnt < 3){
+        while (rbn == 0 && cnt < 5){
+            pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT_LEN, NumberFormat.UInt8LE);
             rbn = pins.i2cReadNumber(_I2CAddr, NumberFormat.UInt8LE);
             basic.pause(800)
             cnt++
@@ -1208,7 +1179,6 @@ namespace LoRaWAN {
             return rb.toString().replaceAll("\r", "").replaceAll("\n", "")
         }
         return "no response."
-       
     }
 
     function isHexString(value: string): boolean {

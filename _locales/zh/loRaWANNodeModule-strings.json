@@ -9,8 +9,6 @@
   "LoRaBand.US915|block": "US915",
   "LoRaCommand.QUERY_DEVADDR|block": "查询 DEVADDR",
   "LoRaCommand.QUERY_DEVEUI|block": "查询 DEVEUI",
-  "LoRaCommand.QUERY_RSSI|block": "查询信号强度 (RSSI)",
-  "LoRaCommand.QUERY_SNR|block": "查询信噪比 (SNR)",
   "LoRaCommand.QUERY_NETID|block": "查询网络ID",
   "LoRaDevType.CLASS_A|block": "CLASS_A",
   "LoRaDevType.CLASS_C|block": "CLASS_C",
