@@ -6,7 +6,6 @@ BaudRate.BaudRate115200
 basic.pause(5000)
 LoRaWAN.initialize()
 serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_DEVEUI))
-LoRaWAN.sendData(1, "hello")
 LoRaWAN.connectOtaaGateway(
 LoRaBand.US915,
 "DFDFDFDF00000000",
