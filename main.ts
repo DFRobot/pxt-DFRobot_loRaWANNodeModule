@@ -6,6 +6,7 @@ BaudRate.BaudRate115200
 basic.pause(5000)
 LoRaWAN.initialize()
 serial.writeLine(LoRaWAN.sendCommand(LoRaCommand.QUERY_DEVEUI))
+LoRaWAN.sendData(1, "hello")
 LoRaWAN.connectOtaaGateway(
 LoRaBand.US915,
 "DFDFDFDF00000000",
@@ -16,7 +17,7 @@ LoRaWAN.connectGatewayAdvanced915(
 LoRaDr915.DR3,
 LoRaEirp915.DBM22,
 LoRaSubBand915.SubBand2,
-LoRaPacketType.UNCONFIRMED_PACKET
+LoRaPacketType.CONFIRMED_PACKET
 )
 LoRaWAN.connectGatewayOfOTAA()
 for (let index = 0; index < 50; index++) {

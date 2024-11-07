@@ -661,7 +661,7 @@ namespace LoRaWAN {
      */
     //% blockId=lorawan_connect_node_advanced_868
     //% block="P2P mode 868MHz node configuration| Device Address: $address| Frequency(FREQ): $freq| Equivalent Isotroplcally Radiated Power(EIRP): $eirp| Bandwidth(BW): 125kHz| Spreading Factor Channel(SF): $sf"
-    //% address.min=1 address.max=255 address.defl=1
+    //% address.min=1 address.max=254 address.defl=1
     //% freq.defl=LoRaFreq868.EU868_8681
     //% eirp.defl=LoRaEirp868.DBM16
     //% sf.defl=LoRaSF868.SF12
@@ -685,7 +685,7 @@ namespace LoRaWAN {
      */
     //% blockId=lorawan_connect_node_advanced_915
     //% block="P2P mode 915MHz node configuration| Device Address: $address | Frequency(FREQ): $freq| Equivalent Isotroplcally Radiated Power(EIRP): $eirp| Bandwidth(BW): 125kHz| Spreading Factor Channel(SF): $sf"
-    //% address.min=1 address.max=255 address.defl=1
+    //% address.min=1 address.max=254 address.defl=1
     //% freq.defl=LoRaFreq915.US915_9030
     //% eirp.defl=LoRaEirp915.DBM22
     //% sf.defl=LoRaSF915.SF10
@@ -709,7 +709,7 @@ namespace LoRaWAN {
      */
     //% blockId=lorawan_connect_node_advanced_470
     //% block="P2P mode 470MHz node configuration| Device Address: $address| Frequency(FREQ): $freq| Equivalent Isotroplcally Radiated Power(EIRP): $eirp| Bandwidth(BW): 125kHz| Spreading Factor Channel(SF): $sf"
-    //% address.min=1 address.max=255 address.defl=1
+    //% address.min=1 address.max=254 address.defl=1
     //% freq.defl=LoRaFreq470.CN470_4863
     //% eirp.defl=LoRaEirp470.DBM19
     //% sf.defl=LoRaSF470.SF12
