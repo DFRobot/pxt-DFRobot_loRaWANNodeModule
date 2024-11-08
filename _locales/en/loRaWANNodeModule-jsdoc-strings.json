@@ -50,6 +50,8 @@
   "LoRaWAN.openDebug": "open debug",
   "LoRaWAN.closeDebug": "close debug",
   "LoRaWAN.initialize": "Initialize module I2C address and configurations",
+  "LoRaWAN.onP2PReceived": "Received a packet in P2P mode",
+  "LoRaWAN.onLoRaWANReceived": "Received a packet from the gateway",
   "LoRaWAN.isConnected": "Check if node successfully joined. Returns true if connected",
   "LoRaWAN.sendCommand": "Send commands to query or configure node",
   "LoRaWAN.sendCommand|param|cmd": "Command",

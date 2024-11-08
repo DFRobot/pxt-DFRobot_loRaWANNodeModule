@@ -342,6 +342,33 @@ namespace LoRaWAN {
 
     let _gwdata = ""
     let _gwdataSnr = 0
+    let timerstart = false
+    
+    
+    let onLoRaWANReceivedHandler: (data: string, snr: number) => void;
+    let onP2PReceivedHandler: (sourceaddr: number, data: string, snr: number) => void;
+
+    //% blockId=P2P_Received
+    //% block="P2P received a data packets"
+    //% useLoc="lorawan_get_data" draggableParameters=reporter
+    //% group="INIT"
+    //% weight=210
+    export function onP2PReceived(cb: (sourceaddr: number, data: string, snr: number) => void) {
+        onP2PReceivedHandler = cb;
+    }
+
+    //% blockId=LoRaWAN_Received
+    //% block="LoRaWAN received a data packets"
+    //% useLoc="lorawan_get_data" draggableParameters=reporter
+    //% group="INIT"
+    //% weight=205
+    export function onLoRaWANReceived(cb: (data: string, snr: number) => void) {
+        onLoRaWANReceivedHandler = cb;
+    }
+
+
+
+
     /**
      * serial debug switch 
      */
@@ -393,6 +420,11 @@ namespace LoRaWAN {
     export function connectNode(): void {
         let AT = "AT+JOIN=1"
         debugLog(sendATCommand(AT))
+        //启动定时器
+        if (!timerstart){
+            timerstart = true
+            loops.everyInterval(2000, getDataLoop)
+        }
     }
 
     /**
@@ -418,8 +450,99 @@ namespace LoRaWAN {
         AT += stringCovertAsciiString(data)
 
         debugLog("sendData=" + AT)
-       
         debugLog(sendATCommand(AT))
+    }
+
+    function nodetest(address: number, data: string): Buffer{
+        let headbuf = Buffer.fromUTF8("+RECV=")
+        let addrbuf = pins.createBuffer(2)
+        addrbuf[0] = _from
+        addrbuf[1] = address
+        let lenbuf = pins.createBuffer(3)
+        lenbuf[0] = 30
+        lenbuf[1] = 55
+        lenbuf[2] = data.length
+        let databuf = Buffer.fromUTF8(data)
+        return headbuf.concat(addrbuf).concat(lenbuf).concat(databuf)
+    }
+    function gatewaytest(data: string): Buffer {
+        let headbuf = Buffer.fromUTF8("+RECV=")
+        let lenbuf = pins.createBuffer(3)
+        lenbuf[0] = 30
+        lenbuf[1] = 56
+        lenbuf[2] = data.length
+        let databuf = Buffer.fromUTF8(data)
+        return headbuf.concat(lenbuf).concat(databuf)
+    }
+
+    function getDataLoop(): void {
+        if (!onP2PReceivedHandler && !onLoRaWANReceivedHandler ){
+            basic.pause(100)
+            return
+        }
+        let str1="hello1"
+        //basic.pause(100)
+        
+       // pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT_LEN, NumberFormat.UInt8LE);
+        //let rbn = pins.i2cReadNumber(_I2CAddr, NumberFormat.UInt8LE);
+        let rb = nodetest(3, "hello").concat(nodetest(4, "hello4")).concat(gatewaytest("test")).concat(gatewaytest("test1"))
+        //读数据
+        let rbn = rb.length
+        //console.log("rbn==" + rbn)
+        if (rbn > 0) {
+            //pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT, NumberFormat.UInt8LE);
+            //let rb = pins.i2cReadBuffer(_I2CAddr, rbn, true)
+            if (rb.length > 0) {
+                let left = rb.length
+                while (left) {
+                    let index = rb.toString().indexOf("+RECV=")
+                    if (index >= 0) {
+                        //for (let i = 0; i < rb.length; i++) {
+                        //    console.log(i+"="+rb[i])
+                        //}
+                        rb = rb.slice(index+6)
+                        left -= index+6
+                        //console.log("=======" + rb.toString())
+                        if (rb.length >= 5 && onP2PReceivedHandler){
+                            let datelen = rb[4]
+                            //校验包是不是合理
+                            if ((datelen + 5) <= rb.length){
+                                if (datelen > 0 && (rb[0] === 0xFF || rb[0] === _from)) {
+                                    let data = rb.slice(5, datelen).toString().replaceAll("\r", "").replaceAll("\n", "")
+                                    let snr = rb[3] - 50
+                                    let saddr = rb[1]
+                                    onP2PReceivedHandler(saddr, data, snr)
+                                    left -= datelen + 5
+                                    if (left > 0) {
+                                        rb = rb.slice(datelen + 5)
+                                    }
+                                    continue
+                                }
+                            }
+                        }
+                        if (rb.length >= 3 && onLoRaWANReceivedHandler) {
+                            let datelen = rb[2]
+                            //校验包长度是不是合理
+                            if ((datelen + 3) <= rb.length) {
+                                if (datelen > 0){
+                                    let data = rb.slice(3, datelen).toString().replaceAll("\r", "").replaceAll("\n", "")
+                                    let snr = rb[1] - 50
+                                    onLoRaWANReceivedHandler(data, snr)
+                                    left -= datelen + 3
+                                    if (left > 0) {
+                                        rb = rb.slice(datelen + 3)
+                                    }
+                                    continue
+                                }
+                            }
+                        }
+                    } else {
+                        //不是节点或网关数据包
+                        return
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -449,6 +572,7 @@ namespace LoRaWAN {
                         _nodeSNR = nrb[3] - 50
                         _nodeFrom = nrb[1]
                         let hexstr = ""
+                        //onP2PReceivedHandler(_nodeFrom, _nodeData, _nodeSNR)
                         //for (let i = 0; i < _nodebuf.length; i++){
                         //    let high = Math.trunc(_nodebuf[i] / 16);
                         //    let low = _nodebuf[i] % 16
@@ -560,6 +684,10 @@ namespace LoRaWAN {
         if (!ack.includes("+JOIN=OK")) {
             debugLog("connectGateway ack: " + ack)
         }
+        if (!timerstart) {
+            timerstart = true
+            loops.everyInterval(2000, getDataLoop)
+        }
     }
 
     /**
@@ -573,6 +701,10 @@ namespace LoRaWAN {
         let AT = "AT+JOIN?"
         let ack = sendATCommand(AT)
         if (ack.includes("+JOIN=1")){
+            if (!timerstart) {
+                timerstart = true
+                loops.everyInterval(2000, getDataLoop)
+            }
             return true
         }
         debugLog("isConnected ack: " + ack)

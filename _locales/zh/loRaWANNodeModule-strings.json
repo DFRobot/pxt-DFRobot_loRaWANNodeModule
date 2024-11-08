@@ -145,6 +145,8 @@
   "LoRaWAN.openDebug|block": "打开调试",
   "LoRaWAN.closeDebug|block": "关闭调试",
   "LoRaWAN.initialize|block": "节点初始化",
+  "LoRaWAN.onLoRaWANReceived|block": "当接收到网关下发的数据包时运行",
+  "LoRaWAN.onP2PReceived|block": "在P2P模式下接收到数据时运行",
   "LoRaWAN.isConnected|block": "连接网关成功",
   "LoRaWAN.sendData|block": "给节点地址 $address 发送数据 $data",
   "LoRaWAN.sendGatewayData|block": "给网关发送数据 $data",

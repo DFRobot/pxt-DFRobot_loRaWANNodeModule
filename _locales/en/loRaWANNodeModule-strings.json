@@ -145,6 +145,8 @@
   "LoRaWAN.openDebug|block": "open debug",
   "LoRaWAN.closeDebug|block": "close debug",
   "LoRaWAN.initialize|block": "Node initialize",
+  "LoRaWAN.onLoRaWANReceived|block": "LoRaWAN received a data packets",
+  "LoRaWAN.onP2PReceived|block": "P2P received a data packets",
   "LoRaWAN.isConnected|block": "Connect Gateway successfully",
   "LoRaWAN.sendData|block": "Send data $data to node address $address",
   "LoRaWAN.sendGatewayData|block": "Send data $data to Gateway",
