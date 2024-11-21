@@ -333,6 +333,8 @@ namespace LoRaWAN {
     let _REG_READ_AT_LEN = 65;//0x41
     let _REG_WRITE_AT = 64; //0x40
     let _REG_READ_AT = 66; //0x42
+    let _REG_READ_DATA = 69; //0x45
+    let _REG_READ_DATA_LEN = 71;//0x49
 
     let _nodeDatalen = 0
     let _nodeData = ""
@@ -343,8 +345,8 @@ namespace LoRaWAN {
     let _gwdata = ""
     let _gwdataSnr = 0
     let timerstart = false
-    
-    
+
+
     let onLoRaWANReceivedHandler: (data: string, snr: number) => void;
     let onP2PReceivedHandler: (sourceaddr: number, data: string, snr: number) => void;
 
@@ -380,8 +382,8 @@ namespace LoRaWAN {
     export function initialize(): void {
         _I2CAddr = 32
         nodereboot()
-        
-        while (nodeStartCheck() == false){
+
+        while (nodeStartCheck() == false) {
             basic.pause(1000)
         }
         //setTEXTTYPE(LoRaTEXTTYPE.ASCII_TYPE)
@@ -400,7 +402,7 @@ namespace LoRaWAN {
         let AT = "AT+JOIN=1"
         debugLog(sendATCommand(AT))
         //启动定时器
-        if (!timerstart){
+        if (!timerstart) {
             timerstart = true
             loops.everyInterval(2000, getDataLoop)
         }
@@ -432,7 +434,7 @@ namespace LoRaWAN {
         debugLog(sendATCommand(AT))
     }
 
-    function nodetest(address: number, data: string): Buffer{
+    function nodetest(address: number, data: string): Buffer {
         let headbuf = Buffer.fromUTF8("+RECV=")
         let addrbuf = pins.createBuffer(2)
         addrbuf[0] = _from
@@ -455,22 +457,27 @@ namespace LoRaWAN {
     }
 
     function getDataLoop(): void {
-        if (!onP2PReceivedHandler && !onLoRaWANReceivedHandler ){
+        if (!onP2PReceivedHandler && !onLoRaWANReceivedHandler) {
             basic.pause(100)
             return
         }
-        let str1="hello1"
+        let str1 = "hello1"
         //basic.pause(100)
-        
-        pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT_LEN, NumberFormat.UInt8LE);
+
+        pins.i2cWriteNumber(_I2CAddr, _REG_READ_DATA_LEN, NumberFormat.UInt8LE);
         let rbn = pins.i2cReadNumber(_I2CAddr, NumberFormat.UInt8LE);
         //let rb = nodetest(3, "hello").concat(nodetest(4, "hello4")).concat(gatewaytest("test")).concat(gatewaytest("test1"))
         //读数据
         //let rbn = rb.length
         //console.log("rbn==" + rbn)
+
         if (rbn > 0) {
-            pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT, NumberFormat.UInt8LE);
+            //debugLog("rbnlen=" + rbn)
+            pins.i2cWriteNumber(_I2CAddr, _REG_READ_DATA, NumberFormat.UInt8LE);
             let rb = pins.i2cReadBuffer(_I2CAddr, rbn, true)
+            //for (let i = 0; i < rb.length; i++){
+            //    debugLog(i + "=" + rb[i])
+            //}
             if (rb.length > 0) {
                 let left = rb.length
                 while (left) {
@@ -479,13 +486,13 @@ namespace LoRaWAN {
                         //for (let i = 0; i < rb.length; i++) {
                         //    console.log(i+"="+rb[i])
                         //}
-                        rb = rb.slice(index+6)
-                        left -= index+6
+                        rb = rb.slice(index + 6)
+                        left -= index + 6
                         //console.log("=======" + rb.toString())
-                        if (rb.length >= 5 && onP2PReceivedHandler){
+                        if (rb.length >= 5 && onP2PReceivedHandler) {
                             let datelen = rb[4]
                             //校验包是不是合理
-                            if ((datelen + 5) <= rb.length){
+                            if ((datelen + 5) <= rb.length) {
                                 if (datelen > 0 && (rb[0] === 0xFF || rb[0] === _from)) {
                                     let data = rb.slice(5, datelen).toString().replaceAll("\r", "").replaceAll("\n", "")
                                     let snr = rb[3] - 50
@@ -503,7 +510,7 @@ namespace LoRaWAN {
                             let datelen = rb[2]
                             //校验包长度是不是合理
                             if ((datelen + 3) <= rb.length) {
-                                if (datelen > 0){
+                                if (datelen > 0) {
                                     let data = rb.slice(3, datelen).toString().replaceAll("\r", "").replaceAll("\n", "")
                                     let snr = rb[1] - 50
                                     onLoRaWANReceivedHandler(data, snr)
@@ -532,18 +539,18 @@ namespace LoRaWAN {
     //% weight=150
     //% group="CONNECT_NODE"
     export function getData(): boolean {
-        pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT_LEN, NumberFormat.UInt8LE);
+        pins.i2cWriteNumber(_I2CAddr, _REG_READ_DATA_LEN, NumberFormat.UInt8LE);
         let rbn = pins.i2cReadNumber(_I2CAddr, NumberFormat.UInt8LE);
 
         //读数据
         if (rbn > 0) {
-            pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT, NumberFormat.UInt8LE);
+            pins.i2cWriteNumber(_I2CAddr, _REG_READ_DATA, NumberFormat.UInt8LE);
             let rb = pins.i2cReadBuffer(_I2CAddr, rbn, true)
-            
-            if (rb.length >= 10 && rb.slice(0,6).toString() === "+RECV="){
+
+            if (rb.length >= 10 && rb.slice(0, 6).toString() === "+RECV=") {
                 let nrb = rb.slice(6)
                 _nodeDatalen = nrb[4]
-                if (_nodeDatalen > 0){
+                if (_nodeDatalen > 0) {
                     if (nrb[0] === 0xFF || nrb[0] === _from) {
                         let _nodebuf = nrb.slice(5, _nodeDatalen)
                         _nodeData = nrb.slice(5, _nodeDatalen).toString().replaceAll("\r", "").replaceAll("\n", "")
@@ -557,7 +564,7 @@ namespace LoRaWAN {
                         //    let low = _nodebuf[i] % 16
                         //    hexstr += numberCovertAsciiString(high) + numberCovertAsciiString(low)
                         //}
-                        debugLog("recv from:" + _nodeFrom + ", recv data: " + _nodeData + ", data len: " + _nodeDatalen  +", rssi=" + _nodeRSSI + ",snr=" + _nodeSNR)
+                        debugLog("recv from:" + _nodeFrom + ", recv data: " + _nodeData + ", data len: " + _nodeDatalen + ", rssi=" + _nodeRSSI + ",snr=" + _nodeSNR)
                         return true
                     }
                 }
@@ -571,8 +578,8 @@ namespace LoRaWAN {
     //% block="P2P read packet $pktdata"
     //% weight=145
     //% group="CONNECT_NODE"
-    export function p2pReadDataPacket(pktdata: LoRaP2PContext): string{
-        switch (pktdata){
+    export function p2pReadDataPacket(pktdata: LoRaP2PContext): string {
+        switch (pktdata) {
             case LoRaP2PContext.DATA:
                 return _nodeData
             case LoRaP2PContext.SNR:
@@ -609,7 +616,7 @@ namespace LoRaWAN {
     //% group="CONNECT_GATEWAY"
     export function connectOtaaGateway(band: LoRaBand, appeui: string, appkey: string, devType: LoRaDevType): void {
         setRegion(band)
-        if (setJoinType(LoRaJoinType.OTAA)){
+        if (setJoinType(LoRaJoinType.OTAA)) {
             setAppEUI(appeui)
             setAppKEY(appkey)
             setDeiveClass(devType)
@@ -636,7 +643,7 @@ namespace LoRaWAN {
     export function connectAbpGateway(band: LoRaBand, nwkSkey: string, appSkey: string, devAddr: string, devType: LoRaDevType): void {
         sendATCommand("AT+LORAMODE=LORAWAN");
         setRegion(band)
-        if(setJoinType(LoRaJoinType.ABP)){
+        if (setJoinType(LoRaJoinType.ABP)) {
             setNwkSKey(nwkSkey)
             setDeiveClass(devType)
             setAppSKey(appSkey)
@@ -654,7 +661,7 @@ namespace LoRaWAN {
     export function connectGatewayOfOTAA(): void {
         let AT = "AT+JOIN=1"
         let ack = sendATCommand(AT)
-        if (!ack.includes("+JOIN=OK")){
+        if (!ack.includes("+JOIN=OK")) {
             debugLog("connectGateway ack: " + ack)
         }
     }
@@ -688,7 +695,7 @@ namespace LoRaWAN {
     export function isConnected(): boolean {
         let AT = "AT+JOIN?"
         let ack = sendATCommand(AT)
-        if (ack.includes("+JOIN=1")){
+        if (ack.includes("+JOIN=1")) {
             if (!timerstart) {
                 timerstart = true
                 loops.everyInterval(2000, getDataLoop)
@@ -712,8 +719,8 @@ namespace LoRaWAN {
         let AT = "AT+SEND=" + stringCovertAsciiString(data) //+ data
         //let AT = "AT+SEND=" +data
         let ack = sendATCommand(AT)
-        if (ack.includes("+SEND=FAIL")){
-            debugLog("sendGatewayData ack: "+ack)
+        if (ack.includes("+SEND=FAIL")) {
+            debugLog("sendGatewayData ack: " + ack)
         }
     }
 
@@ -725,15 +732,15 @@ namespace LoRaWAN {
     //% weight=90
     //% group="CONNECT_GATEWAY"
     export function getGatewayData(): boolean {
-        pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT_LEN, NumberFormat.UInt8LE);
+        pins.i2cWriteNumber(_I2CAddr, _REG_READ_DATA_LEN, NumberFormat.UInt8LE);
         let rbn = pins.i2cReadNumber(_I2CAddr, NumberFormat.UInt8LE);
-       
+
         //读数据
         if (rbn > 0) {
-            
-            pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT, NumberFormat.UInt8LE);
+
+            pins.i2cWriteNumber(_I2CAddr, _REG_READ_DATA, NumberFormat.UInt8LE);
             let rb = pins.i2cReadBuffer(_I2CAddr, rbn, true)
-            if (_debug){
+            if (_debug) {
                 debugLog("rbn==" + rbn)
                 for (let i = 0; i < rb.length; i++) {
                     debugLog("index=" + i + ",data=" + rb[i])
@@ -749,10 +756,10 @@ namespace LoRaWAN {
                     return true
                 }
             }
-          
+
         }
         return false;
-        
+
     }
 
     /**
@@ -763,7 +770,7 @@ namespace LoRaWAN {
     //% weight=85
     //% group="CONNECT_GATEWAY"
     export function readGatewayDownlinkPacket(dpdata: LoRaDownlinkPktContext): string {
-        switch (dpdata){
+        switch (dpdata) {
             case LoRaDownlinkPktContext.DATA:
                 return _gwdata
             case LoRaDownlinkPktContext.SNR:
@@ -820,7 +827,7 @@ namespace LoRaWAN {
     //% weight=70
     //% advanced=true
     export function connectNodeAdvanced915(address: number, freq: LoRaFreq915, eirp: LoRaEirp915, sf: LoRaSF915): void {
-        sendATCommand("AT+LORAMODE=LORA"); 
+        sendATCommand("AT+LORAMODE=LORA");
         setLoRaAddr(address)
         setFreq(freq)
         setEIRP(eirp)
@@ -843,7 +850,7 @@ namespace LoRaWAN {
     //% inlineInputMode=external
     //% weight=60
     //% advanced=true
-    export function connectNodeAdvanced470(address: number,freq: LoRaFreq470, eirp: LoRaEirp470, sf: LoRaSF470): void {
+    export function connectNodeAdvanced470(address: number, freq: LoRaFreq470, eirp: LoRaEirp470, sf: LoRaSF470): void {
         sendATCommand("AT+LORAMODE=LORA");
         setLoRaAddr(address)
         setFreq(freq)
@@ -897,8 +904,8 @@ namespace LoRaWAN {
         setPacketType(packetType)
         enableADR(false)
         setSubBand(subband)
-     }
-    
+    }
+
     /**
      * Advanced configuration for connecting to 470MHz gateway
      * @param dr Data rate
@@ -922,8 +929,8 @@ namespace LoRaWAN {
         setPacketType(packetType)
         enableADR(false)
         setSubBand(subband)
-     }
-    
+    }
+
 
     /**
      * Send commands to query or configure node
@@ -934,14 +941,14 @@ namespace LoRaWAN {
     //% cmd.defl=LoRaCommand.QUERY_DEVEUI
     //% weight=20
     //% advanced=true
-    export function sendCommand(cmd: LoRaCommand): string { 
+    export function sendCommand(cmd: LoRaCommand): string {
         let ack = ""
         switch (cmd) {
             case LoRaCommand.QUERY_DEVEUI:
                 ack = sendATCommand("AT+DEVEUI?")
-                if (ack.includes("+DEVEUI=") ){
+                if (ack.includes("+DEVEUI=")) {
                     return ack.slice(8)
-                }else{
+                } else {
                     return ack
                 }
                 break
@@ -966,7 +973,7 @@ namespace LoRaWAN {
     }
     function setJoinType(join: LoRaJoinType): boolean {
         let ack = ""
-        switch (join){
+        switch (join) {
             case LoRaJoinType.ABP:
                 ack = sendATCommand("AT+JOINTYPE=ABP")
                 break
@@ -974,13 +981,13 @@ namespace LoRaWAN {
                 ack = sendATCommand("AT+JOINTYPE=OTAA")
                 break
         }
-        if (ack.includes("+JOINTYPE=OK")){
+        if (ack.includes("+JOINTYPE=OK")) {
             return true
         }
-        debugLog("setJoinType ack"+ack)
+        debugLog("setJoinType ack" + ack)
         return false
     }
-    function setAppSKey(appskey: string): boolean{
+    function setAppSKey(appskey: string): boolean {
         if (appskey.length != 32) {
             debugLog("appskey error：Invalid length, expected 32 hex chars, only " + appskey.length)
             return false
@@ -989,12 +996,12 @@ namespace LoRaWAN {
             debugLog("appskey error：Invalid hex string, " + appskey)
             return false
         }
-        
+
         let ack = sendATCommand("AT+APPSKEY=" + appskey.toUpperCase())
-        if (ack.includes("+APPSKEY=OK")){
+        if (ack.includes("+APPSKEY=OK")) {
             return true
         }
-        debugLog("setAppSKey ack"+ack)
+        debugLog("setAppSKey ack" + ack)
         return false
     }
     function setNwkSKey(nwkSKey: string): boolean {
@@ -1029,9 +1036,9 @@ namespace LoRaWAN {
         debugLog("setDevAddr ack" + ack)
         return false
     }
-    function setRegion(band: LoRaBand): boolean{
+    function setRegion(band: LoRaBand): boolean {
         let ack = ""
-        switch (band){
+        switch (band) {
             case LoRaBand.EU868:
                 ack = sendATCommand("AT+REGION=EU868")
                 break
@@ -1046,15 +1053,15 @@ namespace LoRaWAN {
                 return false
         }
 
-        if (ack.includes("+REGION=OK") == true){
+        if (ack.includes("+REGION=OK") == true) {
             return true
         }
         debugLog("setRegion ack: " + ack)
-       
-       return false
+
+        return false
     }
 
-    function setAppEUI(appeui: string): boolean{
+    function setAppEUI(appeui: string): boolean {
         if (appeui.length != 16) {
             debugLog("appeui error：Invalid length, expected 16 hex chars, only " + appeui.length)
             return false
@@ -1091,7 +1098,7 @@ namespace LoRaWAN {
 
     function setDeiveClass(classtype: LoRaDevType): boolean {
         let ack = ""
-        switch (classtype){
+        switch (classtype) {
             case LoRaDevType.CLASS_A:
                 ack = sendATCommand("AT+CLASS=CLASS_A")
                 break
@@ -1105,10 +1112,10 @@ namespace LoRaWAN {
         debugLog("setDeiveClass ack: " + ack)
         return false
     }
-    
-    function setTEXTTYPE(textype:LoRaTEXTTYPE):boolean{
+
+    function setTEXTTYPE(textype: LoRaTEXTTYPE): boolean {
         let ack = ""
-        switch (textype){
+        switch (textype) {
             case LoRaTEXTTYPE.ASCII_TYPE:
                 ack = sendATCommand("AT+TEXTTYPE=ASCII")
                 break
@@ -1116,21 +1123,21 @@ namespace LoRaWAN {
                 ack = sendATCommand("AT+TEXTTYPE=HEX")
                 break
         }
-        if (ack.includes("+TEXTTYPE=OK")){
+        if (ack.includes("+TEXTTYPE=OK")) {
             return true
         }
         debugLog("setTEXTTYPE ack: " + ack)
         return false
     }
 
-    function nodereboot():void{
+    function nodereboot(): void {
         let ack = sendATCommand("AT+REBOOT")
-        debugLog("nodereboot ack"+ack)
+        debugLog("nodereboot ack" + ack)
     }
 
-    function nodeStartCheck(): boolean{
+    function nodeStartCheck(): boolean {
         let ack = sendATCommand("AT")
-        if (ack.includes("OK")){
+        if (ack.includes("OK")) {
             return true
         }
         debugLog("nodeStartCheck ack: " + ack)
@@ -1139,7 +1146,7 @@ namespace LoRaWAN {
 
     function setPacketType(ptype: LoRaPacketType): boolean {
         let ack = ""
-        switch (ptype){
+        switch (ptype) {
             case LoRaPacketType.UNCONFIRMED_PACKET:
                 ack = sendATCommand("AT+UPLINKTYPE=UNCONFIRMED")
                 break
@@ -1147,7 +1154,7 @@ namespace LoRaWAN {
                 ack = sendATCommand("AT+UPLINKTYPE=CONFIRMED")
                 break
         }
-        
+
         if (ack.includes("+UPLINKTYPE=OK")) {
             return true
         }
@@ -1165,10 +1172,10 @@ namespace LoRaWAN {
     }
 
     function enableADR(adr: boolean): boolean {
-        let ack = "" 
+        let ack = ""
         if (adr) {
             ack = sendATCommand("AT+ADR=1")
-        }else{
+        } else {
             ack = sendATCommand("AT+ADR=0")
         }
         if (ack.includes("+ADR=OK")) {
@@ -1189,7 +1196,7 @@ namespace LoRaWAN {
 
     function setLoRaAddr(address: number): boolean {
         let ack = sendATCommand("AT+LORAADDR=" + address.toString())
-        if (ack.includes("+LORAADDR=OK")){
+        if (ack.includes("+LORAADDR=OK")) {
             _from = address
             return true
         }
@@ -1232,9 +1239,9 @@ namespace LoRaWAN {
         debugLog("setSF ack: " + ack)
         return false
     }
-    
 
-    function stringCovertAsciiString(msg: string):string{
+
+    function stringCovertAsciiString(msg: string): string {
         let hexStr = "";
         debugLog("origin: " + msg)
         for (let i = 0; i < msg.length; i++) {
@@ -1249,7 +1256,7 @@ namespace LoRaWAN {
         return hexStr
     }
 
-    function numberCovertAsciiString(n: number): string{
+    function numberCovertAsciiString(n: number): string {
         // 0<= n <= 15
         let hexCode = ""
         switch (n) {
@@ -1282,7 +1289,7 @@ namespace LoRaWAN {
             return "AT len is zero"
         }
         cmd += "\r\n"
-        
+
         let _buf = pins.createBuffer(cmd.length + 1);
         _buf[0] = _REG_WRITE_AT
         for (let i = 0; i < cmd.length; i++) {
@@ -1293,14 +1300,14 @@ namespace LoRaWAN {
         //获取需要读取内容的字节数
         let rbn = 0;
         let cnt = 0
-        while (rbn == 0 && cnt < 5){
+        while (rbn == 0 && cnt < 5) {
             pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT_LEN, NumberFormat.UInt8LE);
             rbn = pins.i2cReadNumber(_I2CAddr, NumberFormat.UInt8LE);
             basic.pause(800)
             cnt++
         }
         //读数据
-        if (rbn > 0){
+        if (rbn > 0) {
             pins.i2cWriteNumber(_I2CAddr, _REG_READ_AT, NumberFormat.UInt8LE);
             let rb = pins.i2cReadBuffer(_I2CAddr, rbn, true)
             return rb.toString().replaceAll("\r", "").replaceAll("\n", "")
@@ -1310,20 +1317,17 @@ namespace LoRaWAN {
 
     function isHexString(value: string): boolean {
         const hexChars = "0123456789ABCDEFabcdef";
-        for (let i = 0; i < value.length; i++){
-            if (!hexChars.includes(value[i])){
+        for (let i = 0; i < value.length; i++) {
+            if (!hexChars.includes(value[i])) {
                 return false
             }
         }
         return true
     }
 
-    function debugLog(value: any): void{
-        if (_debug){
+    function debugLog(value: any): void {
+        if (_debug) {
             console.log(value)
         }
     }
 }
-
-
-
