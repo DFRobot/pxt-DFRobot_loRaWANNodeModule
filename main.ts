@@ -15,3 +15,4 @@ LoRaEirp868.DBM16,
 LoRaSF868.SF12
 )
 LoRaWAN.connectNode()
+LoRaWAN.connectGatewayOfOTAA()

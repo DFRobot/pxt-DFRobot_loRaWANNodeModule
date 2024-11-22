@@ -664,6 +664,10 @@ namespace LoRaWAN {
         if (!ack.includes("+JOIN=OK")) {
             debugLog("connectGateway ack: " + ack)
         }
+        if (!timerstart) {
+            timerstart = true
+            loops.everyInterval(2000, getDataLoop)
+        }
     }
 
     /**
@@ -696,10 +700,10 @@ namespace LoRaWAN {
         let AT = "AT+JOIN?"
         let ack = sendATCommand(AT)
         if (ack.includes("+JOIN=1")) {
-            if (!timerstart) {
-                timerstart = true
-                loops.everyInterval(2000, getDataLoop)
-            }
+            //if (!timerstart) {
+            //    timerstart = true
+            //    loops.everyInterval(2000, getDataLoop)
+            //}
             return true
         }
         debugLog("isConnected ack: " + ack)
